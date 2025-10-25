@@ -10,41 +10,21 @@ interface StorySegment {
   content: string;
 }
 
-function parseStoryWithImages(storyText: string): StorySegment[] {
-  const segments: StorySegment[] = [];
-  const regex = /\{([^}]+)\}/g;
-  let lastIndex = 0;
-  let match;
+interface Page {
+  segments: StorySegment[];
+}
 
-  while ((match = regex.exec(storyText)) !== null) {
-    // Add text before the image
-    if (match.index > lastIndex) {
-      const textContent = storyText.substring(lastIndex, match.index).trim();
-      if (textContent) {
-        segments.push({ type: 'text', content: textContent });
-      }
-    }
-
-    // Add the image
-    segments.push({ type: 'image', content: match[1] });
-    lastIndex = regex.lastIndex;
-  }
-
-  // Add remaining text
-  if (lastIndex < storyText.length) {
-    const textContent = storyText.substring(lastIndex).trim();
-    if (textContent) {
-      segments.push({ type: 'text', content: textContent });
-    }
-  }
-
-  return segments;
+interface StoryResponse {
+  success: boolean;
+  pages: Page[];
+  character: string;
+  theme: string;
 }
 
 export default function TestPage() {
   const [charDescription, setCharDescription] = useState('A curious dragon who loves reading books');
   const [storyDescription, setStoryDescription] = useState('An adventure in a magical library');
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<StoryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -153,40 +133,47 @@ export default function TestPage() {
                 ✓ Success: {response.success ? 'true' : 'false'}
               </h3>
               <p className="text-sm text-gray-400">
-                Images found: {parseStoryWithImages(response.story).filter(s => s.type === 'image').length}
+                Pages: {response.pages.length}
+              </p>
+              <p className="text-sm text-gray-400">
+                Total images: {response.pages.reduce((total, page) =>
+                  total + page.segments.filter(s => s.type === 'image').length, 0
+                )}
               </p>
             </div>
 
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2">Story Preview:</h3>
-              <div className="bg-white text-gray-900 rounded p-8 overflow-auto max-h-[600px]">
-                {parseStoryWithImages(response.story).map((segment, index) => {
-                  if (segment.type === 'image') {
-                    return (
-                      <div key={index} className="my-6 flex justify-center">
-                        <img
-                          src={segment.content}
-                          alt={`Story illustration ${index}`}
-                          className="max-w-full rounded-lg shadow-lg border-2 border-gray-200"
-                          style={{ maxHeight: '400px' }}
-                        />
-                      </div>
-                    );
-                  } else {
-                    return (
-                      <p key={index} className="mb-4 text-lg leading-relaxed">
-                        {segment.content}
-                      </p>
-                    );
-                  }
-                })}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold mb-2">Raw Story Text:</h3>
-              <div className="bg-gray-900 rounded p-4 overflow-auto max-h-96 whitespace-pre-wrap font-mono text-sm">
-                {response.story}
+              <div className="space-y-8">
+                {response.pages.map((page, pageIndex) => (
+                  <div key={pageIndex} className="bg-white text-gray-900 rounded-lg p-8 shadow-lg">
+                    <div className="text-sm font-bold text-gray-500 mb-4">
+                      {pageIndex === 0 ? 'COVER' : `PAGE ${pageIndex}`}
+                    </div>
+                    <div className="space-y-4">
+                      {page.segments.map((segment, segIndex) => {
+                        if (segment.type === 'image') {
+                          return (
+                            <div key={segIndex} className="my-6 flex justify-center">
+                              <img
+                                src={segment.content}
+                                alt={`Page ${pageIndex} illustration`}
+                                className="max-w-full rounded-lg shadow-lg border-2 border-gray-200"
+                                style={{ maxHeight: '400px' }}
+                              />
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <p key={segIndex} className="mb-4 text-lg leading-relaxed">
+                              {segment.content}
+                            </p>
+                          );
+                        }
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -210,12 +197,20 @@ export default function TestPage() {
             <div className="mt-4">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(response.story);
-                  alert('Story copied to clipboard!');
+                  const storyText = response.pages.map((page, i) => {
+                    const pageLabel = i === 0 ? 'COVER' : `PAGE ${i}`;
+                    const pageContent = page.segments
+                      .filter(s => s.type === 'text')
+                      .map(s => s.content)
+                      .join('\n\n');
+                    return `${pageLabel}:\n${pageContent}`;
+                  }).join('\n\n---\n\n');
+                  navigator.clipboard.writeText(storyText);
+                  alert('Story text copied to clipboard!');
                 }}
                 className="py-2 px-4 bg-green-600 hover:bg-green-700 rounded font-semibold transition-colors"
               >
-                Copy Story to Clipboard
+                Copy Story Text to Clipboard
               </button>
             </div>
           </div>

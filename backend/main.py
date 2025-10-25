@@ -112,6 +112,52 @@ The character should match the style and appearance of the reference image(s) pr
 
     return None
 
+def parse_page_segments(page_text):
+    """Parse a page's text into segments of text and images."""
+    segments = []
+    pattern = r'\{([^}]+)\}'
+    last_index = 0
+
+    for match in re.finditer(pattern, page_text):
+        # Add text before the image
+        if match.start() > last_index:
+            text_content = page_text[last_index:match.start()].strip()
+            if text_content:
+                segments.append({"type": "text", "content": text_content})
+
+        # Add the image
+        segments.append({"type": "image", "content": match.group(1)})
+        last_index = match.end()
+
+    # Add remaining text
+    if last_index < len(page_text):
+        text_content = page_text[last_index:].strip()
+        if text_content:
+            segments.append({"type": "text", "content": text_content})
+
+    return segments
+
+def parse_story_into_pages(story_text):
+    """Parse the story into structured pages with segments."""
+    pages = []
+
+    # Split by page markers (Cover, Page 1, Page 2, etc.)
+    page_pattern = r'(?:Cover:|Page \d+:)'
+    page_splits = re.split(page_pattern, story_text)
+
+    # Remove empty first element if present
+    if page_splits and not page_splits[0].strip():
+        page_splits = page_splits[1:]
+
+    # Parse each page into segments
+    for page_content in page_splits:
+        if page_content.strip():
+            segments = parse_page_segments(page_content.strip())
+            if segments:  # Only add page if it has content
+                pages.append({"segments": segments})
+
+    return pages
+
 def replace_placeholders_with_images(story_text, reference_image_base64, char_description):
     """Replace all {description} placeholders with {base64_image_url}."""
     placeholders = extract_image_placeholders(story_text)
@@ -214,9 +260,13 @@ IMPORTANT: I'm providing a reference image of the character. Please observe the 
         print("Generating images for story placeholders...")
         final_story = replace_placeholders_with_images(generated_story, image, char_description)
 
+        # Parse story into structured pages
+        print("Parsing story into pages...")
+        pages = parse_story_into_pages(final_story)
+
         return jsonify({
             'success': True,
-            'story': final_story,
+            'pages': pages,
             'character': char_description,
             'theme': story_description
         }), 200
