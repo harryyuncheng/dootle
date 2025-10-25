@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
+import LandingPage from '@/components/LandingPage';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import Storybook from '@/components/Storybook';
+import CloudTransition from '@/components/CloudTransition';
 
 export default function Home() {
   const [description, setDescription] = useState('');
@@ -16,7 +19,9 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [showStorybook, setShowStorybook] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'drawing' | 'input'>('drawing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'drawing' | 'input'>('landing');
+  const [showCloudTransition, setShowCloudTransition] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleImageDataChange = (data: string) => {
     setImageData(data);
@@ -59,11 +64,13 @@ export default function Home() {
 
       const data = await response.json();
       setStoryData(data);
-      setShowStorybook(true);
+      
+      // Start cloud transition for story generation
+      setIsTransitioning(true);
+      setShowCloudTransition(true);
     } catch (err) {
       setError('Failed to generate story. Please try again.');
       console.error('Error generating story:', err);
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -78,37 +85,77 @@ export default function Home() {
     setCurrentPage('drawing');
   };
 
+  const startApp = () => {
+    setCurrentPage('drawing');
+  };
+
   const goToInputPage = () => {
     if (!imageData) {
       setError('Please draw a character first!');
       return;
     }
-    setCurrentPage('input');
-    setError('');
+    setIsTransitioning(true);
+    setShowCloudTransition(true);
   };
 
   const goBackToDrawing = () => {
-    setCurrentPage('drawing');
+    setIsTransitioning(true);
+    setShowCloudTransition(true);
+  };
+
+  const handleCloudTransitionComplete = () => {
+    setShowCloudTransition(false);
+    setIsTransitioning(false);
+    if (currentPage === 'drawing') {
+      setCurrentPage('input');
+    } else if (currentPage === 'input' && storyData) {
+      // Transitioning from input to storybook
+      setShowStorybook(true);
+      setIsGenerating(false);
+    } else if (currentPage === 'input') {
+      setCurrentPage('drawing');
+    }
     setError('');
   };
+
+  if (currentPage === 'landing') {
+    return (
+      <>
+        <LandingPage onStart={startApp} />
+        <CloudTransition 
+          isVisible={showCloudTransition} 
+          onComplete={handleCloudTransitionComplete}
+        />
+      </>
+    );
+  }
 
   // Show storybook if story is generated
   if (showStorybook && storyData) {
     return (
-      <Storybook
-        pages={storyData.pages}
-        imageData={imageData}
-        colorScheme={colorScheme}
-        onBackToDrawing={backToDrawing}
-      />
+      <>
+        <div className={`transition-all duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+          <Storybook
+            pages={storyData.pages}
+            imageData={imageData}
+            colorScheme={colorScheme}
+            onBackToDrawing={backToDrawing}
+          />
+        </div>
+        <CloudTransition 
+          isVisible={showCloudTransition} 
+          onComplete={handleCloudTransitionComplete}
+        />
+      </>
     );
   }
 
   // Show input page
   if (currentPage === 'input') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8">
-        <div className="max-w-2xl mx-auto px-4">
+      <>
+        <div className={`min-h-screen bg-blue-100 py-8 relative overflow-hidden transition-all duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="max-w-2xl mx-auto px-4 relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
               Describe Your Character
@@ -174,14 +221,20 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+        <CloudTransition 
+          isVisible={showCloudTransition} 
+          onComplete={handleCloudTransitionComplete}
+        />
+      </>
     );
   }
 
   // Show main drawing interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <>
+      <div className={`min-h-screen bg-blue-100 py-8 relative overflow-hidden transition-all duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        <div className="max-w-4xl mx-auto px-4 relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Draw Your Character
@@ -216,6 +269,11 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      <CloudTransition 
+        isVisible={showCloudTransition} 
+        onComplete={handleCloudTransitionComplete}
+      />
+    </>
   );
 }
