@@ -2,8 +2,17 @@
 
 import { useState } from 'react';
 
+interface StorySegment {
+  type: 'text' | 'image';
+  content: string;
+}
+
+interface StoryPage {
+  segments: StorySegment[];
+}
+
 interface StorybookProps {
-  pages: string[];
+  pages: StoryPage[];
   imageData: string;
   colorScheme: string[];
   onBackToDrawing: () => void;
@@ -46,33 +55,28 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
 
         {/* Storybook Page */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden min-h-[600px]">
-          <div className="flex h-full">
-            {/* Left Page - Text */}
-            <div className="flex-1 p-8 flex flex-col justify-center">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                  Page {currentPage + 1}
-                </h2>
-                <div className="text-lg text-gray-700 leading-relaxed max-w-lg mx-auto">
-                  {pages[currentPage] || 'Loading...'}
-                </div>
-              </div>
-            </div>
+          <div className="p-8 flex flex-col items-center justify-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              {currentPage === 0 ? 'Cover' : `Page ${currentPage}`}
+            </h2>
 
-            {/* Right Page - Character Image */}
-            <div className="flex-1 p-8 flex items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <div className="mb-4">
-                  <img
-                    src={imageData}
-                    alt="Your Character"
-                    className="max-w-full max-h-80 object-contain rounded-lg shadow-lg"
-                  />
+            {/* Render segments */}
+            <div className="w-full max-w-2xl space-y-6">
+              {pages[currentPage]?.segments.map((segment, index) => (
+                <div key={index} className="flex justify-center">
+                  {segment.type === 'text' ? (
+                    <div className="text-lg text-gray-700 leading-relaxed text-center">
+                      {segment.content}
+                    </div>
+                  ) : (
+                    <img
+                      src={segment.content}
+                      alt={`Story illustration ${index + 1}`}
+                      className="max-w-full max-h-96 object-contain rounded-lg shadow-lg"
+                    />
+                  )}
                 </div>
-                <p className="text-sm text-gray-600 italic">
-                  Your Character
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </div>
