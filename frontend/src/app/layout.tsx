@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Clouds from "@/components/Clouds";
+import CloudTransition from "@/components/CloudTransition";
+import { TransitionProvider } from "@/contexts/TransitionContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +30,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <TransitionProvider>
+          <Clouds />
+          <CloudTransition />
+          {children}
+        </TransitionProvider>
       </body>
     </html>
   );

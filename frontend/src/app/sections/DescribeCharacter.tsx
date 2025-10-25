@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import CloudTransition from '@/components/CloudTransition';
 
 interface DescribeCharacterProps {
   onBack: () => void;
@@ -17,7 +16,6 @@ export default function DescribeCharacter({
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showCloudTransition, setShowCloudTransition] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load session data on mount
@@ -46,7 +44,6 @@ export default function DescribeCharacter({
 
   const handleBack = () => {
     setIsTransitioning(true);
-    setShowCloudTransition(true);
   };
 
   const generateStory = async () => {
@@ -97,7 +94,6 @@ export default function DescribeCharacter({
       
       // Start cloud transition for story generation
       setIsTransitioning(true);
-      setShowCloudTransition(true);
       
       // Navigate after transition starts
       setTimeout(() => {
@@ -111,7 +107,6 @@ export default function DescribeCharacter({
   };
 
   const handleCloudTransitionComplete = () => {
-    setShowCloudTransition(false);
     setIsTransitioning(false);
     
     // If we're not generating (i.e., going back), trigger the back callback
@@ -202,10 +197,6 @@ export default function DescribeCharacter({
           </div>
         </div>
       </div>
-      <CloudTransition 
-        isVisible={showCloudTransition} 
-        onComplete={handleCloudTransitionComplete}
-      />
     </>
   );
 }
