@@ -16,6 +16,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [showStorybook, setShowStorybook] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'drawing' | 'input'>('drawing');
 
   const handleImageDataChange = (data: string) => {
     setImageData(data);
@@ -74,6 +75,21 @@ export default function Home() {
     setDescription('');
     setColorScheme([]);
     setError('');
+    setCurrentPage('drawing');
+  };
+
+  const goToInputPage = () => {
+    if (!imageData) {
+      setError('Please draw a character first!');
+      return;
+    }
+    setCurrentPage('input');
+    setError('');
+  };
+
+  const goBackToDrawing = () => {
+    setCurrentPage('drawing');
+    setError('');
   };
 
   // Show storybook if story is generated
@@ -88,38 +104,37 @@ export default function Home() {
     );
   }
 
-  // Show main drawing interface
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Character Story Generator
-          </h1>
-          <p className="text-gray-600">
-            Draw a character with multiple colors, describe them, and watch AI create a magical storybook!
-          </p>
-        </div>
+  // Show input page
+  if (currentPage === 'input') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              Describe Your Character
+            </h1>
+            <p className="text-gray-600">
+              Tell us about your character and the story you'd like to create!
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Drawing and Input */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Draw Your Character
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Your Drawing
               </h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Choose colors from the palette and adjust brush size. Your drawing's colors will create the storybook's theme!
-              </p>
-              <DrawingCanvas 
-                onImageDataChange={handleImageDataChange}
-                onColorSchemeChange={handleColorSchemeChange}
-              />
+              <div className="flex justify-center">
+                <img
+                  src={imageData}
+                  alt="Your Character"
+                  className="max-w-xs max-h-48 object-contain rounded-lg shadow-md border-2 border-gray-200"
+                />
+              </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Describe Your Character
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Character Description
               </h2>
               <textarea
                 value={description}
@@ -127,84 +142,77 @@ export default function Home() {
                 placeholder="Write a short description of your character... (e.g., 'A brave knight with a golden sword who loves adventure')"
                 className="w-full h-32 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <div className="mt-4">
-                <button
-                  onClick={generateStory}
-                  disabled={isGenerating || !imageData || !description.trim()}
-                  className="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  {isGenerating ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Creating Your Storybook...
-                    </div>
-                  ) : (
-                    '📚 Generate Storybook'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Preview and Info */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Color Scheme Preview
-              </h2>
-              {colorScheme.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {colorScheme.map((color, index) => (
-                      <div
-                        key={index}
-                        className="w-12 h-12 rounded-lg shadow-md"
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    These colors will be used for your storybook's background theme!
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <div className="text-4xl mb-2">🎨</div>
-                  <p>Draw something to see your color scheme!</p>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                What You'll Get
-              </h2>
-              <div className="space-y-3 text-gray-700">
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">📖</span>
-                  <span>6-8 page storybook</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🎨</span>
-                  <span>Your drawing integrated into each page</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">🌈</span>
-                  <span>Background colors from your drawing</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-2xl mr-3">✨</span>
-                  <span>AI-generated story based on your description</span>
-                </div>
-              </div>
             </div>
 
             {error && (
-              <div className="bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg">
+              <div className="mb-6 bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg">
                 {error}
               </div>
             )}
+
+            <div className="flex space-x-4">
+              <button
+                onClick={goBackToDrawing}
+                className="flex-1 py-3 px-6 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-200"
+              >
+                ← Back to Drawing
+              </button>
+              <button
+                onClick={generateStory}
+                disabled={isGenerating || !description.trim()}
+                className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                {isGenerating ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Creating Your Storybook...
+                  </div>
+                ) : (
+                  '📚 Generate Storybook'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show main drawing interface
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            Draw Your Character
+          </h1>
+          <p className="text-gray-600">
+            Use the color palette to draw your character. Click Next when you're ready to describe them!
+          </p>
+        </div>
+
+        <div className="flex justify-center">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <DrawingCanvas 
+              onImageDataChange={handleImageDataChange}
+              onColorSchemeChange={handleColorSchemeChange}
+            />
+            
+            {error && (
+              <div className="mt-6 bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={goToInputPage}
+                disabled={!imageData}
+                className="py-3 px-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         </div>
       </div>
