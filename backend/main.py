@@ -32,7 +32,7 @@ def extract_image_placeholders(story_text):
     matches = re.findall(pattern, story_text)
     return matches
 
-def generate_image_with_gemini(description, reference_image_base64, char_description, cover_image_base64=None):
+def generate_image_with_gemini(description, reference_image_base64, char_description, cover_image_base64=None, is_cover=False):
     """Generate an image using Gemini based on description and reference images."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -40,15 +40,30 @@ def generate_image_with_gemini(description, reference_image_base64, char_descrip
         "Content-Type": "application/json"
     }
 
-    # Create prompt that includes character description
-    prompt = f"""Generate an image that matches this description: {description}
+    # Special prompt for cover to preserve original style
+    if is_cover:
+        prompt = f"""Generate an image that matches this description: {description}
+
+Character context: {char_description}
+
+CRITICAL: The reference image shows the character's art style. You MUST preserve this EXACT art style in your generation:
+- If it's a stick figure, keep it as a stick figure
+- If it's a simple sketch, keep it as a simple sketch
+- If it's minimalist, keep it minimalist
+- Do NOT make it more detailed or "polished" than the original
+- Match the line weight, simplicity level, and drawing technique exactly
+
+Think of this as a style transfer - the character and style from the reference image should be recognizable in your output."""
+    else:
+        # Standard prompt for non-cover images
+        prompt = f"""Generate an image that matches this description: {description}
 
 Character context: {char_description}
 
 The character should match the style and appearance of the reference image(s) provided."""
 
-    if cover_image_base64:
-        prompt += " Maintain the art style consistent with the cover image provided."
+        if cover_image_base64:
+            prompt += " Maintain the art style consistent with the cover image provided."
 
     # Build content array with text and images
     content = [
@@ -116,7 +131,8 @@ def replace_placeholders_with_images(story_text, reference_image_base64, char_de
             description=description,
             reference_image_base64=reference_image_base64,
             char_description=char_description,
-            cover_image_base64=cover_image if not is_cover else None
+            cover_image_base64=cover_image if not is_cover else None,
+            is_cover=is_cover
         )
 
         if generated_image_url:
@@ -154,21 +170,35 @@ def create_story():
 
         # Load story prompt template and add user inputs
         base_prompt = load_story_prompt()
-        prompt = f"""{base_prompt}
+        prompt_text = f"""{base_prompt}
 
 ---
 
 Now generate a story based on these inputs:
 
 Character Description: {char_description}
-Themes: {story_description}"""
+Themes: {story_description}
 
+IMPORTANT: I'm providing a reference image of the character. Please observe the art style (e.g., stick figure, sketch, cartoon, etc.) and incorporate this into your image descriptions. If it's a stick figure, mention "in stick figure style" in the descriptions. If it's a sketch, mention "in sketchy style", etc."""
+
+        # Include the character image in the message to Claude
         completion = client.chat.completions.create(
             model="anthropic/claude-haiku-4.5",
             messages=[
                 {
                     "role": "user",
-                    "content": prompt
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt_text
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image
+                            }
+                        }
+                    ]
                 }
             ]
         )
