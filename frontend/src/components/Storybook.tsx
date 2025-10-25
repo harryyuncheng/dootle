@@ -13,19 +13,9 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
   const [currentPage, setCurrentPage] = useState(0);
 
   const getBackgroundStyle = () => {
-    if (colorScheme.length === 0) {
-      return {
-        background: 'linear-gradient(135deg, #FFD700 0%, #FF6B6B 50%, #4ECDC4 100%)'
-      };
-    }
-
-    // Create gradient from the color scheme
-    const gradientStops = colorScheme.map((color, index) => 
-      `${color} ${(index / (colorScheme.length - 1)) * 100}%`
-    ).join(', ');
-
+    // Always use solid pale blue background
     return {
-      background: `linear-gradient(135deg, ${gradientStops})`
+      background: '#DBEAFE'
     };
   };
 
@@ -47,7 +37,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-white drop-shadow-lg mb-2">
-            📚 Your Storybook
+            Your Storybook
           </h1>
           <p className="text-white/90 text-lg">
             Page {currentPage + 1} of {pages.length}
@@ -126,7 +116,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
             onClick={onBackToDrawing}
             className="px-8 py-3 bg-white/20 backdrop-blur-sm text-white rounded-lg hover:bg-white/30 transition-all duration-200 font-semibold"
           >
-            🎨 Create Another Story
+            Create Another Story
           </button>
         </div>
       </div>
