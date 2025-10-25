@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import NavBar from '@/components/NavBar';
 import HomeSection from './sections/Home';
 import DrawCharacter from './sections/DrawCharacter';
 import DescribeCharacter from './sections/DescribeCharacter';
@@ -13,26 +14,49 @@ export default function Home() {
 
   // Render current page
   if (currentPage === 'landing') {
-    return <HomeSection onStart={() => setCurrentPage('drawing')} />;
+    return (
+      <>
+        <NavBar onHomeClick={() => setCurrentPage('landing')} />
+        <HomeSection onStart={() => setCurrentPage('drawing')} />
+      </>
+    );
   }
 
   if (currentPage === 'drawing') {
-    return <DrawCharacter onNext={() => setCurrentPage('input')} />;
+    return (
+      <>
+        <NavBar onHomeClick={() => setCurrentPage('landing')} />
+        <DrawCharacter onNext={() => setCurrentPage('input')} />
+      </>
+    );
   }
 
   if (currentPage === 'input') {
     return (
-      <DescribeCharacter
-        onBack={() => setCurrentPage('drawing')}
-        onStoryGenerated={() => setCurrentPage('storybook')}
-      />
+      <>
+        <NavBar onHomeClick={() => setCurrentPage('landing')} />
+        <DescribeCharacter
+          onBack={() => setCurrentPage('drawing')}
+          onStoryGenerated={() => setCurrentPage('storybook')}
+        />
+      </>
     );
   }
 
   if (currentPage === 'storybook') {
-    return <Storybook onBackToDrawing={() => setCurrentPage('drawing')} />;
+    return (
+      <>
+        <NavBar onHomeClick={() => setCurrentPage('landing')} />
+        <Storybook onBackToDrawing={() => setCurrentPage('drawing')} />
+      </>
+    );
   }
 
   // Fallback
-  return <HomeSection onStart={() => setCurrentPage('drawing')} />;
+  return (
+    <>
+      <NavBar onHomeClick={() => setCurrentPage('landing')} />
+      <HomeSection onStart={() => setCurrentPage('drawing')} />
+    </>
+  );
 }
