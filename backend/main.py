@@ -20,40 +20,65 @@ client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
+def load_story_prompt():
+    """Load the story prompt template from file."""
+    prompt_path = os.path.join(os.path.dirname(__file__), 'story-prompt.txt')
+    with open(prompt_path, 'r') as f:
+        return f.read()
+
 def extract_image_placeholders(story_text):
-    """Extract all [[description]] placeholders from the story."""
-    pattern = r'\[\[([^\]]+)\]\]'
+    """Extract all {description} placeholders from the story."""
+    pattern = r'\{([^\}]+)\}'
     matches = re.findall(pattern, story_text)
     return matches
 
-def generate_image_with_gemini(description, reference_image_base64):
-    """Generate an image using Gemini based on description and reference image."""
+def generate_image_with_gemini(description, reference_image_base64, char_description, cover_image_base64=None):
+    """Generate an image using Gemini based on description and reference images."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
         "Content-Type": "application/json"
     }
 
-    # Create prompt that references both the description and the style of the user's image
-    prompt = f"Generate an image that matches this description: {description}. The character should match the style and appearance of the reference image provided."
+    # Create prompt that includes character description
+    prompt = f"""Generate an image that matches this description: {description}
+
+Character context: {char_description}
+
+The character should match the style and appearance of the reference image(s) provided."""
+
+    if cover_image_base64:
+        prompt += " Maintain the art style consistent with the cover image provided."
+
+    # Build content array with text and images
+    content = [
+        {
+            "type": "text",
+            "text": prompt
+        },
+        {
+            "type": "image_url",
+            "image_url": {
+                "url": reference_image_base64
+            }
+        }
+    ]
+
+    # Add cover image if provided (for non-cover images)
+    if cover_image_base64:
+        content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": cover_image_base64
+            }
+        })
 
     payload = {
         "model": "google/gemini-2.5-flash-image",
         "messages": [
             {
                 "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": reference_image_base64
-                        }
-                    }
-                ]
+                "content": content
             }
         ],
         "modalities": ["image", "text"],
@@ -72,19 +97,37 @@ def generate_image_with_gemini(description, reference_image_base64):
 
     return None
 
-def replace_placeholders_with_images(story_text, reference_image_base64):
-    """Replace all [[description]] placeholders with [[base64_image_url]]."""
+def replace_placeholders_with_images(story_text, reference_image_base64, char_description):
+    """Replace all {description} placeholders with {base64_image_url}."""
     placeholders = extract_image_placeholders(story_text)
     modified_story = story_text
+    cover_image = None
 
-    for description in placeholders:
-        print(f"Generating image for: {description}")
-        generated_image_url = generate_image_with_gemini(description, reference_image_base64)
+    for index, description in enumerate(placeholders):
+        is_cover = index == 0
+
+        if is_cover:
+            print(f"Generating cover image: {description}")
+        else:
+            print(f"Generating image {index + 1}/{len(placeholders)}: {description}")
+
+        # Generate image with or without cover reference
+        generated_image_url = generate_image_with_gemini(
+            description=description,
+            reference_image_base64=reference_image_base64,
+            char_description=char_description,
+            cover_image_base64=cover_image if not is_cover else None
+        )
 
         if generated_image_url:
+            # Store the first image as the cover for subsequent generations
+            if is_cover:
+                cover_image = generated_image_url
+                print("✓ Cover image generated and will be used for consistency")
+
             # Replace the placeholder with the generated image URL
-            old_placeholder = f"[[{description}]]"
-            new_placeholder = f"[[{generated_image_url}]]"
+            old_placeholder = f"{{{description}}}"
+            new_placeholder = f"{{{generated_image_url}}}"
             modified_story = modified_story.replace(old_placeholder, new_placeholder, 1)
         else:
             print(f"Failed to generate image for: {description}")
@@ -109,15 +152,16 @@ def create_story():
                 'error': 'Missing required fields. Need: image, charDescription, storyDescription'
             }), 400
 
-        # Generate story using Claude via OpenRouter
-        prompt = f"""Create a children's story based on the following:
+        # Load story prompt template and add user inputs
+        base_prompt = load_story_prompt()
+        prompt = f"""{base_prompt}
+
+---
+
+Now generate a story based on these inputs:
 
 Character Description: {char_description}
-Story Theme/Description: {story_description}
-
-Please write an engaging, creative children's story that incorporates these elements. The story should be appropriate for young readers and capture their imagination.
-
-IMPORTANT: Throughout the story, include up to {MAX_IMAGES} image placeholders where illustrations would enhance the narrative. Format these as [[description of the scene]], where the description is detailed enough to generate an illustration. Use "my character" to describe the character in the story. For example: [[My character watching the dragon sitting in the library surrounded by colorful books]]. These placeholders should be naturally integrated into the story text."""
+Themes: {story_description}"""
 
         completion = client.chat.completions.create(
             model="anthropic/claude-haiku-4.5",
@@ -138,7 +182,7 @@ IMPORTANT: Throughout the story, include up to {MAX_IMAGES} image placeholders w
 
         # Replace placeholders with actual generated images
         print("Generating images for story placeholders...")
-        final_story = replace_placeholders_with_images(generated_story, image)
+        final_story = replace_placeholders_with_images(generated_story, image, char_description)
 
         return jsonify({
             'success': True,
