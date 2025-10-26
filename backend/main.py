@@ -18,7 +18,7 @@ CORS(app)
 
 # Configuration
 MAX_IMAGES = 5  # Maximum number of images to generate per story
-PARALLEL_IMAGE_GENERATION = False  # Set to False to generate images sequentially (avoids rate limiting)
+PARALLEL_IMAGE_GENERATION = True  # Set to False to generate images sequentially (avoids rate limiting)
 IMAGE_GENERATION_MAX_RETRIES = 3  # Number of times to retry image generation on failure
 IMAGE_GENERATION_RETRY_DELAY = 5  # Initial delay in seconds between retries (exponential backoff)
 TEST_MODE = False  # Set to True to use sample.json instead of making API calls
