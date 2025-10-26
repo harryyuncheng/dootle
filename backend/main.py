@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import os
 import requests
 import re
+import aiohttp
+import asyncio
 
 load_dotenv()
 
@@ -32,8 +34,8 @@ def extract_image_placeholders(story_text):
     matches = re.findall(pattern, story_text)
     return matches
 
-def generate_image_with_gemini(description, reference_image_base64, char_description, cover_image_base64=None, is_cover=False):
-    """Generate an image using Gemini based on description and reference images."""
+async def generate_image_with_gemini_async(session, description, reference_image_base64, char_description, cover_image_base64=None, is_cover=False):
+    """Generate an image using Gemini based on description and reference images (async version)."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
@@ -102,15 +104,75 @@ The character should match the style and appearance of the reference image(s) pr
         }
     }
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+    async with session.post(url, headers=headers, json=payload) as response:
+        result = await response.json()
 
-    if result.get("choices"):
-        message = result["choices"][0]["message"]
-        if message.get("images") and len(message["images"]) > 0:
-            return message["images"][0]["image_url"]["url"]
+        if result.get("choices"):
+            message = result["choices"][0]["message"]
+            if message.get("images") and len(message["images"]) > 0:
+                return message["images"][0]["image_url"]["url"]
 
     return None
+
+async def generate_all_images_parallel(placeholders, reference_image_base64, char_description):
+    """Generate all images in parallel (cover first, then rest concurrently)."""
+    if not placeholders:
+        return {}
+
+    async with aiohttp.ClientSession() as session:
+        # Step 1: Generate cover image first
+        cover_description = placeholders[0]
+        print(f"Generating cover image: {cover_description}")
+
+        cover_image_url = await generate_image_with_gemini_async(
+            session=session,
+            description=cover_description,
+            reference_image_base64=reference_image_base64,
+            char_description=char_description,
+            cover_image_base64=None,
+            is_cover=True
+        )
+
+        if not cover_image_url:
+            print(f"Failed to generate cover image")
+            return {}
+
+        print("✓ Cover image generated and will be used for consistency")
+
+        # Store cover result
+        results = {cover_description: cover_image_url}
+
+        # Step 2: Generate all other images in parallel
+        if len(placeholders) > 1:
+            print(f"Generating {len(placeholders) - 1} images in parallel...")
+
+            tasks = []
+            for index, description in enumerate(placeholders[1:], start=1):
+                print(f"Queuing image {index + 1}/{len(placeholders)}: {description}")
+                task = generate_image_with_gemini_async(
+                    session=session,
+                    description=description,
+                    reference_image_base64=reference_image_base64,
+                    char_description=char_description,
+                    cover_image_base64=cover_image_url,
+                    is_cover=False
+                )
+                tasks.append((description, task))
+
+            # Wait for all parallel generations to complete
+            parallel_results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
+
+            # Map results back to descriptions
+            for (description, _), result in zip(tasks, parallel_results):
+                if isinstance(result, Exception):
+                    print(f"Failed to generate image for: {description} - {result}")
+                elif result:
+                    results[description] = result
+                    print(f"✓ Generated image for: {description[:50]}...")
+                else:
+                    print(f"Failed to generate image for: {description}")
+
+        return results
 
 def parse_page_segments(page_text):
     """Parse a page's text into segments of text and images."""
@@ -159,40 +221,28 @@ def parse_story_into_pages(story_text):
     return pages
 
 def replace_placeholders_with_images(story_text, reference_image_base64, char_description):
-    """Replace all {description} placeholders with {base64_image_url}."""
+    """Replace all {description} placeholders with {base64_image_url} using parallel generation."""
     placeholders = extract_image_placeholders(story_text)
-    modified_story = story_text
-    cover_image = None
 
-    for index, description in enumerate(placeholders):
-        is_cover = index == 0
+    if not placeholders:
+        return story_text
 
-        if is_cover:
-            print(f"Generating cover image: {description}")
-        else:
-            print(f"Generating image {index + 1}/{len(placeholders)}: {description}")
-
-        # Generate image with or without cover reference
-        generated_image_url = generate_image_with_gemini(
-            description=description,
-            reference_image_base64=reference_image_base64,
-            char_description=char_description,
-            cover_image_base64=cover_image if not is_cover else None,
-            is_cover=is_cover
+    # Generate all images in parallel using asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        image_map = loop.run_until_complete(
+            generate_all_images_parallel(placeholders, reference_image_base64, char_description)
         )
+    finally:
+        loop.close()
 
-        if generated_image_url:
-            # Store the first image as the cover for subsequent generations
-            if is_cover:
-                cover_image = generated_image_url
-                print("✓ Cover image generated and will be used for consistency")
-
-            # Replace the placeholder with the generated image URL
-            old_placeholder = f"{{{description}}}"
-            new_placeholder = f"{{{generated_image_url}}}"
-            modified_story = modified_story.replace(old_placeholder, new_placeholder, 1)
-        else:
-            print(f"Failed to generate image for: {description}")
+    # Replace placeholders with generated images
+    modified_story = story_text
+    for description, image_url in image_map.items():
+        old_placeholder = f"{{{description}}}"
+        new_placeholder = f"{{{image_url}}}"
+        modified_story = modified_story.replace(old_placeholder, new_placeholder, 1)
 
     return modified_story
 
