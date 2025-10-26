@@ -60,7 +60,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     if (currentPage === 0) {
       return "/book/book_mid.png"; // Show book_mid.png as background for title page
     } else if (currentPage === 17) {
-      return "/book/book_mid.png"; // Show book_mid.png as background for back page
+      return "/book/book_back.png"; // Show book_back.png for back page
     } else {
       return "/book/book_mid.png";
     }
@@ -70,8 +70,16 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     return currentPage > 0 && currentPage < 17;
   };
 
-  const shouldShowPageNumbers = () => {
-    return currentPage > 0 && currentPage < 17;
+  const shouldShowEnlargementAnimation = () => {
+    return currentPage >= 1 && currentPage <= 16;
+  };
+
+  const shouldShowShrinkAnimation = () => {
+    return currentPage === 15 || currentPage === 16;
+  };
+
+  const shouldShowBookBackTransition = () => {
+    return currentPage === 17;
   };
 
   const readAloud = async () => {
@@ -143,8 +151,66 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     }
   };
 
+  console.log(pages)
+
   return (
-    <div className="h-screen w-screen flex flex-col items-center p-0 overflow-hidden" style={getBackgroundStyle()}>
+    <>
+      <style jsx>{`
+        @keyframes enlargeTo80Percent {
+          0% {
+            transform: scale(1);
+          }
+          100% {
+            transform: scale(1.43);
+          }
+        }
+        
+        @keyframes enlargeBookTo80Percent {
+          0% {
+            transform: scale(0.75);
+          }
+          100% {
+            transform: scale(1.1);
+          }
+        }
+        
+        @keyframes backgroundFadeToDark {
+          0% {
+            background-color: #DBEAFE;
+          }
+          100% {
+            background-color: #0f172a;
+          }
+        }
+        
+        @keyframes shrinkToNormal {
+          0% {
+            transform: scale(1.43);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes shrinkBookToNormal {
+          0% {
+            transform: scale(1.1);
+          }
+          100% {
+            transform: scale(0.75);
+          }
+        }
+        
+        @keyframes backgroundFadeToLight {
+          0% {
+            background-color: #0f172a;
+          }
+          100% {
+            background-color: #DBEAFE;
+          }
+        }
+      `}</style>
+      <div className="h-screen w-screen flex flex-col items-center p-0 overflow-hidden" style={{...getBackgroundStyle(), animation: shouldShowEnlargementAnimation() ? 'backgroundFadeToDark 1s ease-out forwards' : shouldShowShrinkAnimation() ? 'backgroundFadeToLight 1.2s ease-out forwards' : ''}}>
       <div className="max-w-4xl w-full h-full flex flex-col">
         {/* Header */}
         <div className="text-center mb-0 py-1">
@@ -183,11 +249,11 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
         <div className="relative flex-1 flex items-start justify-center pt-2">
             {/* Book Background Image */}
             <div className="relative w-full max-w-4xl">
-              <img
-                src={getBookImage()}
-                alt="Storybook"
-                className="w-full h-auto object-contain scale-75"
-              />
+               <img
+                 src={getBookImage()}
+                 alt="Storybook"
+                 className={`w-full h-auto object-contain ${shouldShowEnlargementAnimation() ? 'animate-[enlargeBookTo80Percent_1s_ease-out_forwards]' : shouldShowShrinkAnimation() ? 'animate-[shrinkBookToNormal_1.2s_ease-out_forwards]' : shouldShowBookBackTransition() ? 'scale-75' : 'scale-75'}`}
+               />
             
             {/* Background box for title page - extends across both buttons */}
             {currentPage === 0 && (
@@ -210,8 +276,8 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
             )}
 
             {/* Transparent Navigation Buttons - Connected in Center */}
-            <div className="absolute inset-0 flex justify-center items-center z-30">
-              <div className="flex w-[70%] h-[70%]">
+             <div className="absolute inset-0 flex justify-center items-center z-30" style={currentPage === 17 ? { transform: 'translateY(-2cm)' } : {}}>
+               <div className={`flex w-[70%] h-[70%] ${shouldShowEnlargementAnimation() ? 'animate-[enlargeTo80Percent_1s_ease-out_forwards]' : shouldShowShrinkAnimation() ? 'animate-[shrinkToNormal_1.2s_ease-out_forwards]' : ''}`}>
                 {/* Left Half Button - Previous */}
                 <div 
                   className={`flex-1 transition-colors rounded-l-lg relative ${
@@ -227,7 +293,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
                     <img
                       src="/book/book_back.png"
                       alt="Book Back"
-                      className="absolute inset-0 w-full h-full object-contain scale-110"
+                      className="absolute top-0 left-0 w-full h-auto object-contain scale-110"
                     />
                   )}
                 </div>
@@ -254,14 +320,15 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
               </div>
             </div>
 
-            {/* Story Content - Only show for content pages */}
+            
+            {/* Content Overlay - Only show for middle pages */}
             {shouldShowContent() && (
-              <div className="absolute inset-0 flex z-15 pointer-events-none">
-                <div className="flex w-[70%] mx-auto">
+              <div className="absolute inset-0 flex justify-center items-center z-10">
+                 <div className={`flex w-[70%] h-[70%] ${shouldShowEnlargementAnimation() ? 'animate-[enlargeTo80Percent_1s_ease-out_forwards]' : shouldShowShrinkAnimation() ? 'animate-[shrinkToNormal_1.2s_ease-out_forwards]' : ''}`}>
                   {/* Left Page Content */}
-                  <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-auto">
-                    <div className="space-y-3 max-h-full">
-                      {pages[currentPage]?.segments.map((segment, index) => (
+                  <div className="flex-1 py-4 flex flex-col justify-center">
+                    <div className="text-center space-y-2 ml-4 mr-8">
+                    {pages[currentPage]?.segments.map((segment, index) => (
                         <div key={index} className="flex justify-center">
                           {segment.type === 'text' ? (
                             <div className="text-sm text-gray-700 leading-relaxed text-center">
@@ -280,9 +347,9 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
                   </div>
 
                   {/* Right Page Content */}
-                  <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-auto">
-                    <div className="space-y-3 max-h-full">
-                      {pages[currentPage + 1]?.segments.map((segment, index) => (
+                  <div className="flex-1 py-4 flex flex-col justify-center">
+                    <div className="text-center space-y-2 ml-8 mr-4">
+                    {pages[currentPage + 1]?.segments.map((segment, index) => (
                         <div key={index} className="flex justify-center">
                           {segment.type === 'text' ? (
                             <div className="text-sm text-gray-700 leading-relaxed text-center">
@@ -298,29 +365,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Page Number Textboxes - Only show for content pages */}
-            {shouldShowPageNumbers() && (
-              <div className="absolute inset-0 flex z-20">
-                {/* Left Page Number */}
-                <div className="flex-1 flex justify-center items-start pt-4">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg">
-                    <span className="text-sm font-semibold text-gray-800">
-                      Page {currentPage}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right Page Number */}
-                <div className="flex-1 flex justify-center items-start pt-4">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg">
-                    <span className="text-sm font-semibold text-gray-800">
-                      Page {currentPage + 1}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -384,5 +428,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
         </div>
       </div>
     </div>
+    </>
   );
 }

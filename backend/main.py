@@ -18,6 +18,8 @@ CORS(app)
 # Configuration
 MAX_IMAGES = 5  # Maximum number of images to generate per story
 PARALLEL_IMAGE_GENERATION = False  # Set to False to generate images sequentially (avoids rate limiting)
+IMAGE_GENERATION_MAX_RETRIES = 3  # Number of times to retry image generation on failure
+IMAGE_GENERATION_RETRY_DELAY = 5  # Initial delay in seconds between retries (exponential backoff)
 
 # Initialize OpenRouter client
 client = OpenAI(
@@ -43,7 +45,7 @@ def extract_image_placeholders(story_text):
     return matches
 
 async def generate_image_with_gemini_async(session, description, reference_image_base64, char_description, cover_image_base64=None, is_cover=False):
-    """Generate an image using Gemini based on description and reference images (async version)."""
+    """Generate an image using Gemini based on description and reference images (async version with retry logic)."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
@@ -112,13 +114,61 @@ The character should match the style and appearance of the reference image(s) pr
         }
     }
 
-    async with session.post(url, headers=headers, json=payload) as response:
-        result = await response.json()
+    # Retry logic with exponential backoff
+    for attempt in range(IMAGE_GENERATION_MAX_RETRIES):
+        try:
+            async with session.post(url, headers=headers, json=payload) as response:
+                # Check if response is successful
+                if response.status != 200:
+                    error_text = await response.text()
+                    print(f"HTTP {response.status} error (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES}): {error_text[:200]}")
 
-        if result.get("choices"):
-            message = result["choices"][0]["message"]
-            if message.get("images") and len(message["images"]) > 0:
-                return message["images"][0]["image_url"]["url"]
+                    if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                        delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                        print(f"Retrying in {delay} seconds...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        return None
+
+                # Try to parse JSON response
+                try:
+                    result = await response.json()
+                except Exception as json_error:
+                    error_text = await response.text()
+                    print(f"JSON parsing error (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES}): {str(json_error)}")
+                    print(f"Response text: {error_text[:200]}")
+
+                    if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                        delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                        print(f"Retrying in {delay} seconds...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        return None
+
+                # Check if response has expected structure
+                if result.get("choices"):
+                    message = result["choices"][0]["message"]
+                    if message.get("images") and len(message["images"]) > 0:
+                        return message["images"][0]["image_url"]["url"]
+
+                # If we got a JSON response but no image, log it
+                print(f"No image in response (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES})")
+                if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                    delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                    print(f"Retrying in {delay} seconds...")
+                    await asyncio.sleep(delay)
+                    continue
+
+        except Exception as e:
+            print(f"Exception during image generation (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES}): {str(e)}")
+
+            if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                print(f"Retrying in {delay} seconds...")
+                await asyncio.sleep(delay)
+                continue
 
     return None
 
@@ -235,7 +285,7 @@ def parse_story_into_pages(story_text):
     pages = []
 
     # Split by page markers (Cover, Page 1, Page 2, etc.)
-    page_pattern = r'(?:Cover:|Page \d+)'
+    page_pattern = r'(?:Cover:|Page|PAGE \d+)'
     page_splits = re.split(page_pattern, story_text)
 
     # Remove empty first element if present
