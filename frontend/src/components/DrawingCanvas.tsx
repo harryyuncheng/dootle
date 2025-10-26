@@ -1,10 +1,15 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 
 interface DrawingCanvasProps {
   onImageDataChange: (imageData: string) => void;
   onColorSchemeChange: (colors: string[]) => void;
+  canvasRef?: React.RefObject<{ clearCanvas: () => void }>;
+}
+
+export interface DrawingCanvasRef {
+  clearCanvas: () => void;
 }
 
 const BASE_COLORS = [
@@ -13,37 +18,33 @@ const BASE_COLORS = [
   '#00FF00', // Green
   '#0000FF', // Blue
   '#FFFF00', // Yellow
-];
-
-const ADDITIONAL_COLORS = [
   '#FF00FF', // Magenta
-  '#00FFFF', // Cyan
-  '#FFA500', // Orange
-  '#800080', // Purple
-  '#FFC0CB', // Pink
-  '#A52A2A', // Brown
-  '#808080', // Gray
-  '#FFD700', // Gold
-  '#FF69B4', // Hot Pink
-  '#32CD32', // Lime Green
-  '#4169E1', // Royal Blue
-  '#FF4500', // Orange Red
-  '#9370DB', // Medium Purple
-  '#20B2AA', // Light Sea Green
-  '#FF6347', // Tomato
-  '#8A2BE2', // Blue Violet
 ];
 
-const BRUSH_SIZES = [2, 5, 10];
+const BRUSH_SIZES = [2, 4, 7];
+const MAX_COLORS = 6;
 
-export default function DrawingCanvas({ onImageDataChange, onColorSchemeChange }: DrawingCanvasProps) {
+const DrawingCanvas = forwardRef<DrawingCanvasRef, Omit<DrawingCanvasProps, 'canvasRef'>>((
+  { onImageDataChange, onColorSchemeChange }, 
+  ref
+) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawing, setHasDrawing] = useState(false);
   const [selectedColor, setSelectedColor] = useState('#000000');
+  const [isEraser, setIsEraser] = useState(false);
   const [brushSize, setBrushSize] = useState(5);
   const [availableColors, setAvailableColors] = useState<string[]>(BASE_COLORS);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [hue, setHue] = useState(0);
+  const [saturation, setSaturation] = useState(100);
+  const [lightness, setLightness] = useState(50);
+  const [tempColor, setTempColor] = useState('#ff0000');
+  const saturationBoxRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const colorPickerButtonRef = useRef<HTMLButtonElement>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -52,22 +53,30 @@ export default function DrawingCanvas({ onImageDataChange, onColorSchemeChange }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size only once
-    if (canvas.width === 0 || canvas.height === 0) {
-      canvas.width = 400;
-      canvas.height = 400;
-      
-      // Fill with white background only on first load
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
     // Set drawing styles
-    ctx.strokeStyle = selectedColor;
+    if (isEraser) {
+      ctx.globalCompositeOperation = 'destination-out';
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = selectedColor;
+    }
     ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-  }, [selectedColor, brushSize]);
+  }, [selectedColor, brushSize, isEraser]);
+
+  // Initialize canvas on mount
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fill with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }, []);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
@@ -83,7 +92,12 @@ export default function DrawingCanvas({ onImageDataChange, onColorSchemeChange }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.strokeStyle = selectedColor;
+    if (isEraser) {
+      ctx.globalCompositeOperation = 'destination-out';
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = selectedColor;
+    }
     ctx.lineWidth = brushSize;
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -154,12 +168,102 @@ export default function DrawingCanvas({ onImageDataChange, onColorSchemeChange }
   };
 
   const addColor = (color: string) => {
-    if (!availableColors.includes(color)) {
-      setAvailableColors([...availableColors, color]);
+    // Replace the currently selected color with the new color
+    const colorIndex = availableColors.indexOf(selectedColor);
+    if (colorIndex !== -1) {
+      const newColors = [...availableColors];
+      newColors[colorIndex] = color;
+      setAvailableColors(newColors);
     }
     setSelectedColor(color);
     setShowColorPicker(false);
   };
+
+  const confirmColor = () => {
+    addColor(tempColor);
+  };
+
+  const hslToHex = (h: number, s: number, l: number): string => {
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+
+  const updateTempColor = useCallback((h: number, s: number, l: number) => {
+    const hex = hslToHex(h, s, l);
+    setTempColor(hex);
+  }, []);
+
+  const handleSaturationBoxClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const box = saturationBoxRef.current;
+    if (!box) return;
+    
+    const rect = box.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const newSaturation = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const newLightness = Math.max(0, Math.min(100, 100 - (y / rect.height) * 100));
+    
+    setSaturation(newSaturation);
+    setLightness(newLightness);
+    updateTempColor(hue, newSaturation, newLightness);
+  };
+
+  const handleSaturationBoxMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    handleSaturationBoxClick(e);
+  };
+
+  const handleSaturationBoxMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    handleSaturationBoxClick(e);
+  };
+
+  const handleSaturationBoxMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showColorPicker &&
+        colorPickerRef.current &&
+        !colorPickerRef.current.contains(event.target as Node) &&
+        colorPickerButtonRef.current &&
+        !colorPickerButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowColorPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showColorPicker]);
+
+  const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHue = parseInt(e.target.value);
+    setHue(newHue);
+    updateTempColor(newHue, saturation, lightness);
+  };
+
+  useEffect(() => {
+    updateTempColor(hue, saturation, lightness);
+  }, [hue, saturation, lightness, updateTempColor]);
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
@@ -173,96 +277,249 @@ export default function DrawingCanvas({ onImageDataChange, onColorSchemeChange }
     setHasDrawing(false);
     onImageDataChange('');
     onColorSchemeChange([]);
+    setShowClearConfirm(false);
   };
+
+  const handleClearClick = () => {
+    if (hasDrawing) {
+      setShowClearConfirm(true);
+    } else {
+      clearCanvas();
+    }
+  };
+
+  // Expose clearCanvas method to parent
+  useImperativeHandle(ref, () => ({
+    clearCanvas
+  }));
 
   return (
     <div className="flex flex-col items-center space-y-6">
-      {/* Color Palette */}
-      <div className="w-full">
-        <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">Color Palette</h3>
+      {/* Color Palette and Brush Size */}
+      <div className="w-full relative">
         <div className="flex justify-center items-center gap-3">
-          {/* Base Colors */}
-          {availableColors.map((color) => (
-            <button
-              key={color}
-              onClick={() => setSelectedColor(color)}
-              className={`w-12 h-12 rounded-lg border-3 shadow-sm hover:shadow-md transition-all duration-200 ${
-                selectedColor === color 
-                  ? 'border-gray-800 scale-110 shadow-lg' 
-                  : 'border-gray-300 hover:scale-105'
-              }`}
-              style={{ backgroundColor: color }}
-              title={color}
-            />
-          ))}
-          
-          {/* Add Color Button */}
+          {/* Pen Button */}
           <button
-            onClick={() => setShowColorPicker(!showColorPicker)}
-            className="w-12 h-12 rounded-lg border-3 border-gray-300 bg-gray-100 hover:bg-gray-200 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center text-gray-600 font-bold text-lg"
-            title="Add more colors"
+            onClick={() => setIsEraser(false)}
+            className="transition-all duration-200 flex items-center justify-center"
           >
-            +
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className={`w-5 h-5 transition-colors ${
+                !isEraser ? 'text-blue-500' : 'text-gray-600'
+              }`}
+            >
+              <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+              <path d="M2 2l7.586 7.586"></path>
+              <circle cx="11" cy="11" r="2"></circle>
+            </svg>
+          </button>
+          
+          {/* Eraser Button */}
+          <button
+            onClick={() => {
+              setIsEraser(true);
+              // Keep selectedColor unchanged for concurrency purposes
+            }}
+            className="transition-all duration-200 flex items-center justify-center"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="1.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className={`w-5 h-5 transition-colors ${
+                isEraser ? 'text-blue-500' : 'text-gray-600'
+              }`}
+            >
+              <path d="M20 20H7L3 16L12 7L17 12M11 13L17 19" />
+            </svg>
+          </button>
+          
+          {/* Color Palette */}
+          <div className="flex items-center gap-3">
+            {/* Base Colors */}
+            {availableColors.map((color) => (
+              <button
+                key={color}
+                onClick={() => {
+                  setSelectedColor(color);
+                  setIsEraser(false);
+                }}
+                className={`w-6 h-6 rounded-full shadow-sm transition-all duration-200 ${
+                  selectedColor === color
+                    ? 'border-[3px] border-blue-500' 
+                    : 'border-[3px] border-transparent'
+                }`}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+            
+            {/* Add Color Button */}
+            <button
+              ref={colorPickerButtonRef}
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className="w-6 h-6 rounded-full shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center hover:scale-105 relative"
+              style={{
+                background: 'conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)'
+              }}
+            >
+              <span className="text-white font-bold text-sm drop-shadow-lg">+</span>
+            </button>
+          </div>
+          
+          {/* Brush Sizes */}
+          <div className="flex items-center gap-3">
+            {BRUSH_SIZES.map((size) => (
+              <button
+                key={size}
+                onClick={() => setBrushSize(size)}
+                className="flex items-center justify-center transition-all duration-200 hover:scale-110"
+              >
+                <div 
+                  className={`rounded-full transition-all ${
+                    brushSize === size ? 'bg-blue-500' : 'bg-gray-600'
+                  }`}
+                  style={{ 
+                    width: '20px',
+                    height: `${size}px`,
+                    borderRadius: `${size / 2}px`
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+          
+          {/* Clear Canvas */}
+          <button
+            onClick={handleClearClick}
+            className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            clear canvas
           </button>
         </div>
         
-        {/* Additional Colors Dropdown */}
-        {showColorPicker && (
-          <div className="mt-4 p-4 bg-white rounded-lg shadow-lg border border-gray-200">
-            <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Choose a color to add:</h4>
-            <div className="grid grid-cols-6 gap-2">
-              {ADDITIONAL_COLORS.map((color) => (
+        {/* Clear Confirmation Popup */}
+        {showClearConfirm && (
+          <div className="absolute inset-0 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 shadow-xl border border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Are you sure?</h3>
+              <div className="flex gap-3">
                 <button
-                  key={color}
-                  onClick={() => addColor(color)}
-                  className={`w-8 h-8 rounded-lg border-2 shadow-sm hover:shadow-md transition-all duration-200 ${
-                    availableColors.includes(color)
-                      ? 'border-green-500 opacity-50 cursor-not-allowed'
-                      : 'border-gray-300 hover:scale-110'
-                  }`}
-                  style={{ backgroundColor: color }}
-                  title={color}
-                  disabled={availableColors.includes(color)}
-                />
-              ))}
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={clearCanvas}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Brush Size Buttons */}
-      <div className="flex items-center space-x-3 bg-gray-50 rounded-lg px-4 py-2">
-        <span className="text-sm font-medium text-gray-700">Brush Size:</span>
-        <div className="flex space-x-2">
-          {BRUSH_SIZES.map((size) => (
+        
+        {/* Gradient Color Picker */}
+        {showColorPicker && (
+          <div 
+            ref={colorPickerRef}
+            className="absolute top-full mt-2 p-4 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
+            style={{
+              left: colorPickerButtonRef.current 
+                ? `${colorPickerButtonRef.current.offsetLeft + colorPickerButtonRef.current.offsetWidth / 2}px`
+                : '50%',
+              transform: 'translateX(-50%)'
+            }}
+          >
+            {/* Exit Button */}
             <button
-              key={size}
-              onClick={() => setBrushSize(size)}
-              className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
-                brushSize === size
-                  ? 'bg-blue-500 border-blue-600 shadow-md'
-                  : 'bg-white border-gray-300 hover:bg-gray-100 hover:border-gray-400'
-              }`}
-              title={`${size}px brush`}
+              onClick={() => confirmColor()}
+              className="absolute top-2 left-2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 font-bold text-sm transition-colors"
+              title="Close and confirm color"
             >
-              <div 
-                className={`rounded-full ${
-                  brushSize === size ? 'bg-white' : 'bg-gray-600'
-                }`}
-                style={{ 
-                  width: `${Math.max(2, size * 2)}px`, 
-                  height: `${Math.max(2, size * 2)}px` 
-                }}
-              />
+              ×
             </button>
-          ))}
-        </div>
+            
+            <h4 className="text-sm font-medium text-gray-700 mb-3 text-center">Pick a color</h4>
+            
+            <div className="space-y-3">
+              {/* Saturation/Lightness Box */}
+              <div 
+                ref={saturationBoxRef}
+                onMouseDown={handleSaturationBoxMouseDown}
+                onMouseMove={handleSaturationBoxMouseMove}
+                onMouseUp={handleSaturationBoxMouseUp}
+                className="relative w-48 h-48 cursor-crosshair rounded select-none"
+                style={{
+                  background: `
+                    linear-gradient(to top, black, transparent),
+                    linear-gradient(to right, white, hsl(${hue}, 100%, 50%))
+                  `
+                }}
+              >
+                {/* Selector Circle */}
+                <div
+                  className="absolute w-4 h-4 border-2 border-white rounded-full shadow-lg pointer-events-none"
+                  style={{
+                    left: `${saturation}%`,
+                    top: `${100 - lightness}%`,
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                />
+              </div>
+              
+              {/* Hue Bar */}
+              <div className="relative">
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  value={hue}
+                  onChange={handleHueChange}
+                  className="w-full h-5 appearance-none cursor-pointer rounded"
+                  style={{
+                    background: 'linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)',
+                  }}
+                />
+              </div>
+              
+              {/* Color Preview and Confirm */}
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-10 h-10 rounded border-2 border-gray-300"
+                  style={{ backgroundColor: tempColor }}
+                />
+                <button
+                  onClick={confirmColor}
+                  className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Canvas */}
       <div className="border-3 border-gray-300 rounded-xl overflow-hidden shadow-xl bg-white">
         <canvas
           ref={canvasRef}
+          width={600}
+          height={400}
           className="cursor-crosshair"
           onMouseDown={startDrawing}
           onMouseMove={draw}
@@ -270,16 +527,10 @@ export default function DrawingCanvas({ onImageDataChange, onColorSchemeChange }
           onMouseLeave={stopDrawing}
         />
       </div>
-
-      {/* Controls */}
-      <div className="flex justify-center">
-        <button
-          onClick={clearCanvas}
-          className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
-        >
-          Clear Canvas
-        </button>
-      </div>
     </div>
   );
-}
+});
+
+DrawingCanvas.displayName = 'DrawingCanvas';
+
+export default DrawingCanvas;
