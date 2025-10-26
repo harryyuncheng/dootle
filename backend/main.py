@@ -296,7 +296,9 @@ def parse_story_into_pages(story_text):
     pages = []
 
     # Split by page markers (Cover, Page 1, Page 2, etc.)
-    page_pattern = r'(?:Cover:|Page|PAGE \d+)'
+    # Use (?m) for multiline mode and ^ to anchor to line start
+    # This prevents matching "Page" in the middle of base64 image data
+    page_pattern = r'(?m)^(?:Cover:|Page \d+|PAGE \d+)'
     page_splits = re.split(page_pattern, story_text)
 
     # Remove empty first element if present

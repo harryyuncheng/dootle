@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Schoolbell } from "next/font/google";
 import "./globals.css";
 import Clouds from "@/components/Clouds";
 import { TransitionProvider } from "@/contexts/TransitionContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,10 +45,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${schoolbell.variable} antialiased`}
       >
-        <TransitionProvider>
-          <Clouds />
-          {children}
-        </TransitionProvider>
+        <AuthProvider>
+          <TransitionProvider>
+            <Clouds />
+            {children}
+          </TransitionProvider>
+        </AuthProvider>
       </body>
     </html>
   );
