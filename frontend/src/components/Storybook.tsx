@@ -151,8 +151,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     }
   };
 
-  console.log(pages)
-
   return (
     <>
       <style jsx>{`
