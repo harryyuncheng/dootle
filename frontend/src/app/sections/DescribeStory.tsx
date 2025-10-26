@@ -1,10 +1,7 @@
 'use client';
 
-import CloudTransition from '@/components/CloudTransition';
-
 interface DescribeStoryProps {
   isTransitioning: boolean;
-  showCloudTransition: boolean;
   onCloudTransitionComplete: () => void;
 }
 
@@ -15,7 +12,6 @@ interface DescribeStoryProps {
  */
 export default function DescribeStory({
   isTransitioning,
-  showCloudTransition,
   onCloudTransitionComplete,
 }: DescribeStoryProps) {
   return (
@@ -38,10 +34,6 @@ export default function DescribeStory({
           </div>
         </div>
       </div>
-      <CloudTransition 
-        isVisible={showCloudTransition} 
-        onComplete={onCloudTransitionComplete}
-      />
     </>
   );
 }
