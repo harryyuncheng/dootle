@@ -17,6 +17,7 @@ CORS(app)
 
 # Configuration
 MAX_IMAGES = 5  # Maximum number of images to generate per story
+PARALLEL_IMAGE_GENERATION = False  # Set to False to generate images sequentially (avoids rate limiting)
 
 # Initialize OpenRouter client
 client = OpenAI(
@@ -149,35 +150,58 @@ async def generate_all_images_parallel(placeholders, reference_image_base64, cha
         # Store cover result
         results = {cover_description: cover_image_url}
 
-        # Step 2: Generate all other images in parallel
+        # Step 2: Generate all other images (parallel or sequential based on config)
         if len(placeholders) > 1:
-            print(f"Generating {len(placeholders) - 1} images in parallel...")
+            if PARALLEL_IMAGE_GENERATION:
+                # Parallel mode: Generate all images concurrently
+                print(f"Generating {len(placeholders) - 1} images in parallel...")
 
-            tasks = []
-            for index, description in enumerate(placeholders[1:], start=1):
-                print(f"Queuing image {index + 1}/{len(placeholders)}: {description}")
-                task = generate_image_with_gemini_async(
-                    session=session,
-                    description=description,
-                    reference_image_base64=reference_image_base64,
-                    char_description=char_description,
-                    cover_image_base64=cover_image_url,
-                    is_cover=False
-                )
-                tasks.append((description, task))
+                tasks = []
+                for index, description in enumerate(placeholders[1:], start=1):
+                    print(f"Queuing image {index + 1}/{len(placeholders)}: {description}")
+                    task = generate_image_with_gemini_async(
+                        session=session,
+                        description=description,
+                        reference_image_base64=reference_image_base64,
+                        char_description=char_description,
+                        cover_image_base64=cover_image_url,
+                        is_cover=False
+                    )
+                    tasks.append((description, task))
 
-            # Wait for all parallel generations to complete
-            parallel_results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
+                # Wait for all parallel generations to complete
+                parallel_results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
 
-            # Map results back to descriptions
-            for (description, _), result in zip(tasks, parallel_results):
-                if isinstance(result, Exception):
-                    print(f"Failed to generate image for: {description} - {result}")
-                elif result:
-                    results[description] = result
-                    print(f"✓ Generated image for: {description[:50]}...")
-                else:
-                    print(f"Failed to generate image for: {description}")
+                # Map results back to descriptions
+                for (description, _), result in zip(tasks, parallel_results):
+                    if isinstance(result, Exception):
+                        print(f"Failed to generate image for: {description} - {result}")
+                    elif result:
+                        results[description] = result
+                        print(f"✓ Generated image for: {description[:50]}...")
+                    else:
+                        print(f"Failed to generate image for: {description}")
+            else:
+                # Sequential mode: Generate images one at a time to avoid rate limiting
+                print(f"Generating {len(placeholders) - 1} images sequentially...")
+
+                for index, description in enumerate(placeholders[1:], start=1):
+                    print(f"Generating image {index + 1}/{len(placeholders)}: {description}")
+
+                    result = await generate_image_with_gemini_async(
+                        session=session,
+                        description=description,
+                        reference_image_base64=reference_image_base64,
+                        char_description=char_description,
+                        cover_image_base64=cover_image_url,
+                        is_cover=False
+                    )
+
+                    if result:
+                        results[description] = result
+                        print(f"✓ Generated image for: {description[:50]}...")
+                    else:
+                        print(f"Failed to generate image for: {description}")
 
         return results
 
