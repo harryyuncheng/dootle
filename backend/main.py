@@ -1,10 +1,14 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import requests
 import re
+import aiohttp
+import asyncio
+from elevenlabs.client import ElevenLabs
+from io import BytesIO
 
 load_dotenv()
 
@@ -13,11 +17,19 @@ CORS(app)
 
 # Configuration
 MAX_IMAGES = 5  # Maximum number of images to generate per story
+PARALLEL_IMAGE_GENERATION = False  # Set to False to generate images sequentially (avoids rate limiting)
+IMAGE_GENERATION_MAX_RETRIES = 3  # Number of times to retry image generation on failure
+IMAGE_GENERATION_RETRY_DELAY = 5  # Initial delay in seconds between retries (exponential backoff)
 
 # Initialize OpenRouter client
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=os.getenv("OPENROUTER_API_KEY"),
+)
+
+# Initialize ElevenLabs client
+elevenlabs = ElevenLabs(
+    api_key=os.getenv("ELEVENLABS_API_KEY"),
 )
 
 def load_story_prompt():
@@ -32,8 +44,8 @@ def extract_image_placeholders(story_text):
     matches = re.findall(pattern, story_text)
     return matches
 
-def generate_image_with_gemini(description, reference_image_base64, char_description, cover_image_base64=None, is_cover=False):
-    """Generate an image using Gemini based on description and reference images."""
+async def generate_image_with_gemini_async(session, description, reference_image_base64, char_description, cover_image_base64=None, is_cover=False):
+    """Generate an image using Gemini based on description and reference images (async version with retry logic)."""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
@@ -102,15 +114,146 @@ The character should match the style and appearance of the reference image(s) pr
         }
     }
 
-    response = requests.post(url, headers=headers, json=payload)
-    result = response.json()
+    # Retry logic with exponential backoff
+    for attempt in range(IMAGE_GENERATION_MAX_RETRIES):
+        try:
+            async with session.post(url, headers=headers, json=payload) as response:
+                # Check if response is successful
+                if response.status != 200:
+                    error_text = await response.text()
+                    print(f"HTTP {response.status} error (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES}): {error_text[:200]}")
 
-    if result.get("choices"):
-        message = result["choices"][0]["message"]
-        if message.get("images") and len(message["images"]) > 0:
-            return message["images"][0]["image_url"]["url"]
+                    if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                        delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                        print(f"Retrying in {delay} seconds...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        return None
+
+                # Try to parse JSON response
+                try:
+                    result = await response.json()
+                except Exception as json_error:
+                    error_text = await response.text()
+                    print(f"JSON parsing error (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES}): {str(json_error)}")
+                    print(f"Response text: {error_text[:200]}")
+
+                    if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                        delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                        print(f"Retrying in {delay} seconds...")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        return None
+
+                # Check if response has expected structure
+                if result.get("choices"):
+                    message = result["choices"][0]["message"]
+                    if message.get("images") and len(message["images"]) > 0:
+                        return message["images"][0]["image_url"]["url"]
+
+                # If we got a JSON response but no image, log it
+                print(f"No image in response (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES})")
+                if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                    delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                    print(f"Retrying in {delay} seconds...")
+                    await asyncio.sleep(delay)
+                    continue
+
+        except Exception as e:
+            print(f"Exception during image generation (attempt {attempt + 1}/{IMAGE_GENERATION_MAX_RETRIES}): {str(e)}")
+
+            if attempt < IMAGE_GENERATION_MAX_RETRIES - 1:
+                delay = IMAGE_GENERATION_RETRY_DELAY * (2 ** attempt)
+                print(f"Retrying in {delay} seconds...")
+                await asyncio.sleep(delay)
+                continue
 
     return None
+
+async def generate_all_images_parallel(placeholders, reference_image_base64, char_description):
+    """Generate all images in parallel (cover first, then rest concurrently)."""
+    if not placeholders:
+        return {}
+
+    async with aiohttp.ClientSession() as session:
+        # Step 1: Generate cover image first
+        cover_description = placeholders[0]
+        print(f"Generating cover image: {cover_description}")
+
+        cover_image_url = await generate_image_with_gemini_async(
+            session=session,
+            description=cover_description,
+            reference_image_base64=reference_image_base64,
+            char_description=char_description,
+            cover_image_base64=None,
+            is_cover=True
+        )
+
+        if not cover_image_url:
+            print(f"Failed to generate cover image")
+            return {}
+
+        print("✓ Cover image generated and will be used for consistency")
+
+        # Store cover result
+        results = {cover_description: cover_image_url}
+
+        # Step 2: Generate all other images (parallel or sequential based on config)
+        if len(placeholders) > 1:
+            if PARALLEL_IMAGE_GENERATION:
+                # Parallel mode: Generate all images concurrently
+                print(f"Generating {len(placeholders) - 1} images in parallel...")
+
+                tasks = []
+                for index, description in enumerate(placeholders[1:], start=1):
+                    print(f"Queuing image {index + 1}/{len(placeholders)}: {description}")
+                    task = generate_image_with_gemini_async(
+                        session=session,
+                        description=description,
+                        reference_image_base64=reference_image_base64,
+                        char_description=char_description,
+                        cover_image_base64=cover_image_url,
+                        is_cover=False
+                    )
+                    tasks.append((description, task))
+
+                # Wait for all parallel generations to complete
+                parallel_results = await asyncio.gather(*[task for _, task in tasks], return_exceptions=True)
+
+                # Map results back to descriptions
+                for (description, _), result in zip(tasks, parallel_results):
+                    if isinstance(result, Exception):
+                        print(f"Failed to generate image for: {description} - {result}")
+                    elif result:
+                        results[description] = result
+                        print(f"✓ Generated image for: {description[:50]}...")
+                    else:
+                        print(f"Failed to generate image for: {description}")
+            else:
+                # Sequential mode: Generate images one at a time to avoid rate limiting
+                print(f"Generating {len(placeholders) - 1} images sequentially...")
+
+                for index, description in enumerate(placeholders[1:], start=1):
+                    print(f"Generating image {index + 1}/{len(placeholders)}: {description}")
+
+                    result = await generate_image_with_gemini_async(
+                        session=session,
+                        description=description,
+                        reference_image_base64=reference_image_base64,
+                        char_description=char_description,
+                        cover_image_base64=cover_image_url,
+                        is_cover=False
+                    )
+
+                    if result:
+                        results[description] = result
+                        print(f"✓ Generated image for: {description[:50]}...")
+                    else:
+                        print(f"Failed to generate image for: {description}")
+
+        return results
 
 def parse_page_segments(page_text):
     """Parse a page's text into segments of text and images."""
@@ -142,7 +285,7 @@ def parse_story_into_pages(story_text):
     pages = []
 
     # Split by page markers (Cover, Page 1, Page 2, etc.)
-    page_pattern = r'(?:Cover:|Page \d+:)'
+    page_pattern = r'(?:Cover:|Page|PAGE \d+)'
     page_splits = re.split(page_pattern, story_text)
 
     # Remove empty first element if present
@@ -159,40 +302,28 @@ def parse_story_into_pages(story_text):
     return pages
 
 def replace_placeholders_with_images(story_text, reference_image_base64, char_description):
-    """Replace all {description} placeholders with {base64_image_url}."""
+    """Replace all {description} placeholders with {base64_image_url} using parallel generation."""
     placeholders = extract_image_placeholders(story_text)
-    modified_story = story_text
-    cover_image = None
 
-    for index, description in enumerate(placeholders):
-        is_cover = index == 0
+    if not placeholders:
+        return story_text
 
-        if is_cover:
-            print(f"Generating cover image: {description}")
-        else:
-            print(f"Generating image {index + 1}/{len(placeholders)}: {description}")
-
-        # Generate image with or without cover reference
-        generated_image_url = generate_image_with_gemini(
-            description=description,
-            reference_image_base64=reference_image_base64,
-            char_description=char_description,
-            cover_image_base64=cover_image if not is_cover else None,
-            is_cover=is_cover
+    # Generate all images in parallel using asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        image_map = loop.run_until_complete(
+            generate_all_images_parallel(placeholders, reference_image_base64, char_description)
         )
+    finally:
+        loop.close()
 
-        if generated_image_url:
-            # Store the first image as the cover for subsequent generations
-            if is_cover:
-                cover_image = generated_image_url
-                print("✓ Cover image generated and will be used for consistency")
-
-            # Replace the placeholder with the generated image URL
-            old_placeholder = f"{{{description}}}"
-            new_placeholder = f"{{{generated_image_url}}}"
-            modified_story = modified_story.replace(old_placeholder, new_placeholder, 1)
-        else:
-            print(f"Failed to generate image for: {description}")
+    # Replace placeholders with generated images
+    modified_story = story_text
+    for description, image_url in image_map.items():
+        old_placeholder = f"{{{description}}}"
+        new_placeholder = f"{{{image_url}}}"
+        modified_story = modified_story.replace(old_placeholder, new_placeholder, 1)
 
     return modified_story
 
@@ -270,6 +401,44 @@ IMPORTANT: I'm providing a reference image of the character. Please observe the 
             'character': char_description,
             'theme': story_description
         }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/text-to-speech', methods=['POST'])
+def text_to_speech():
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        text = data.get('text')
+
+        if not text:
+            return jsonify({'error': 'Missing required field: text'}), 400
+
+        # Convert text to speech using ElevenLabs
+        audio_generator = elevenlabs.text_to_speech.convert(
+            text=text,
+            voice_id="JBFqnCBsd6RMkjVDRZzb",  # Default voice
+            model_id="eleven_multilingual_v2",
+            output_format="mp3_44100_128",
+        )
+
+        # Convert generator to bytes
+        audio_bytes = BytesIO()
+        for chunk in audio_generator:
+            audio_bytes.write(chunk)
+        audio_bytes.seek(0)
+
+        return send_file(
+            audio_bytes,
+            mimetype='audio/mpeg',
+            as_attachment=False,
+            download_name='speech.mp3'
+        )
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
