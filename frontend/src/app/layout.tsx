@@ -21,8 +21,12 @@ const schoolbell = Schoolbell({
 });
 
 export const metadata: Metadata = {
-  title: "Character Story Generator",
+  title: "Dootle",
   description: "Draw a character and generate AI stories",
+  icons: {
+    icon: '/DootlePencil.png',
+    apple: '/DootlePencil.png',
+  },
 };
 
 export default function RootLayout({
@@ -32,6 +36,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/DootlePencil.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/DootlePencil.png" />
+        <link rel="shortcut icon" href="/DootlePencil.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${schoolbell.variable} antialiased`}
       >
