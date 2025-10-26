@@ -18,7 +18,7 @@ CORS(app)
 
 # Configuration
 MAX_IMAGES = 5  # Maximum number of images to generate per story
-PARALLEL_IMAGE_GENERATION = False  # Set to False to generate images sequentially (avoids rate limiting)
+PARALLEL_IMAGE_GENERATION = True  # Set to False to generate images sequentially (avoids rate limiting)
 
 # Initialize OpenRouter client
 client = OpenAI(
@@ -236,7 +236,7 @@ def parse_story_into_pages(story_text):
     pages = []
 
     # Split by page markers (Cover, Page 1, Page 2, etc.)
-    page_pattern = r'(?:Cover:|Page \d+)'
+    page_pattern = r'(?:Cover:|Page|PAGE \d+)'
     page_splits = re.split(page_pattern, story_text)
 
     # Remove empty first element if present
@@ -359,44 +359,6 @@ IMPORTANT: I'm providing a reference image of the character. Please observe the 
         story_doc['_id'] = str(result.inserted_id)
 
         return jsonify(story_doc), 200
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/text-to-speech', methods=['POST'])
-def text_to_speech():
-    try:
-        data = request.get_json()
-
-        # Validate required fields
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-
-        text = data.get('text')
-
-        if not text:
-            return jsonify({'error': 'Missing required field: text'}), 400
-
-        # Convert text to speech using ElevenLabs
-        audio_generator = elevenlabs.text_to_speech.convert(
-            text=text,
-            voice_id="JBFqnCBsd6RMkjVDRZzb",  # Default voice
-            model_id="eleven_multilingual_v2",
-            output_format="mp3_44100_128",
-        )
-
-        # Convert generator to bytes
-        audio_bytes = BytesIO()
-        for chunk in audio_generator:
-            audio_bytes.write(chunk)
-        audio_bytes.seek(0)
-
-        return send_file(
-            audio_bytes,
-            mimetype='audio/mpeg',
-            as_attachment=False,
-            download_name='speech.mp3'
-        )
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
