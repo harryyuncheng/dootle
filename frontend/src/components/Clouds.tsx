@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useTransition } from '@/contexts/TransitionContext';
 
 export default function Clouds() {
-  const { isTransitioning } = useTransition();
+  const { isTransitioning, isStorybookPage } = useTransition();
 
   // Cloud configurations with positions and slide distances
   const clouds = [
@@ -53,16 +53,29 @@ export default function Clouds() {
           '--slide-distance-right'?: string;
         };
 
+        // Determine animation class based on state
+        let animationClass = '';
+        if (isStorybookPage && isTransitioning) {
+          // Slide in and then continue out
+          animationClass = cloud.fromLeft 
+            ? 'animate-cloud-from-left-exit' 
+            : 'animate-cloud-from-right-exit';
+        } else if (isTransitioning) {
+          // Normal slide in and back
+          animationClass = cloud.fromLeft 
+            ? 'animate-cloud-from-left' 
+            : 'animate-cloud-from-right';
+        } else if (isStorybookPage) {
+          // Stay hidden if already on storybook page
+          animationClass = cloud.fromLeft 
+            ? 'translate-x-[-150vw] opacity-0' 
+            : 'translate-x-[150vw] opacity-0';
+        }
+
         return (
           <div
             key={index}
-            className={`absolute transition-transform duration-1000 ease-in-out ${
-              isTransitioning 
-                ? cloud.fromLeft 
-                  ? 'animate-cloud-from-left' 
-                  : 'animate-cloud-from-right'
-                : ''
-            }`}
+            className={`absolute transition-transform duration-1000 ease-in-out ${animationClass}`}
             style={customStyle}
           >
             <Image

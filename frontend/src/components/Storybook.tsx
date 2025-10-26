@@ -25,13 +25,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const getBackgroundStyle = () => {
-    // Always use solid pale blue background
-    return {
-      background: '#DBEAFE'
-    };
-  };
-
   const nextPage = () => {
     if (currentPage === 0) {
       // From title page to first content page
@@ -58,7 +51,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
 
   const getBookImage = () => {
     if (currentPage === 0) {
-      return "/book/book_mid.png"; // Show book_mid.png as background for title page
+      return "/book/book_front.png"; // Show front cover for page 0
     } else if (currentPage === 17) {
       return "/book/book_back.png"; // Show book_back.png for back page
     } else {
@@ -172,15 +165,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
           }
         }
         
-        @keyframes backgroundFadeToDark {
-          0% {
-            background-color: #DBEAFE;
-          }
-          100% {
-            background-color: #0f172a;
-          }
-        }
-        
         @keyframes shrinkToNormal {
           0% {
             transform: scale(1.43);
@@ -196,15 +180,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
           }
           100% {
             transform: scale(0.75);
-          }
-        }
-        
-        @keyframes backgroundFadeToLight {
-          0% {
-            background-color: #0f172a;
-          }
-          100% {
-            background-color: #DBEAFE;
           }
         }
       `}</style>
@@ -244,76 +219,58 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
         </div>
 
         {/* Storybook Page */}
-        <div className="relative flex-1 flex items-start justify-center pt-2">
+        <div className="relative flex items-center justify-center w-full max-w-4xl">
             {/* Book Background Image */}
             <div className="relative w-full max-w-4xl">
                <img
                  src={getBookImage()}
                  alt="Storybook"
-                 className={`w-full h-auto object-contain ${shouldShowEnlargementAnimation() ? 'animate-[enlargeBookTo80Percent_1s_ease-out_forwards]' : shouldShowShrinkAnimation() ? 'animate-[shrinkBookToNormal_1.2s_ease-out_forwards]' : shouldShowBookBackTransition() ? 'scale-75' : 'scale-75'}`}
+                 className={`w-full h-auto object-contain ${
+                   currentPage === 0 
+                     ? 'scale-[0.375]' 
+                     : currentPage === 17 
+                     ? 'scale-[0.375]' 
+                     : shouldShowEnlargementAnimation() 
+                     ? 'animate-[enlargeBookTo80Percent_1s_ease-out_forwards]' 
+                     : shouldShowShrinkAnimation() 
+                     ? 'animate-[shrinkBookToNormal_1.2s_ease-out_forwards]' 
+                     : 'scale-75'
+                 }`}
                />
-            
-            {/* Background box for title page - extends across both buttons */}
-            {currentPage === 0 && (
-              <div className="absolute inset-0 flex justify-center items-center z-25">
-                <div 
-                  className="w-[70%] h-[70%] scale-110"
-                  style={{ backgroundColor: '#DBEAFE' }}
-                />
-              </div>
-            )}
-
-            {/* Background box for back page - extends across both buttons */}
-            {currentPage === 17 && (
-              <div className="absolute inset-0 flex justify-center items-center z-25">
-                <div 
-                  className="w-[70%] h-[70%] scale-110"
-                  style={{ backgroundColor: '#DBEAFE' }}
-                />
-              </div>
-            )}
 
             {/* Transparent Navigation Buttons - Connected in Center */}
-             <div className="absolute inset-0 flex justify-center items-center z-30" style={currentPage === 17 ? { transform: 'translateY(-2cm)' } : {}}>
-               <div className={`flex w-[70%] h-[70%] ${shouldShowEnlargementAnimation() ? 'animate-[enlargeTo80Percent_1s_ease-out_forwards]' : shouldShowShrinkAnimation() ? 'animate-[shrinkToNormal_1.2s_ease-out_forwards]' : ''}`}>
+             <div className="absolute inset-0 flex justify-center items-center z-30">
+               <div className={`flex ${
+                 currentPage === 0 || currentPage === 17 
+                   ? 'w-[35%] h-[35%]' 
+                   : 'w-[70%] h-[70%]'
+               } ${shouldShowEnlargementAnimation() ? 'animate-[enlargeTo80Percent_1s_ease-out_forwards]' : shouldShowShrinkAnimation() ? 'animate-[shrinkToNormal_1.2s_ease-out_forwards]' : ''}`}>
                 {/* Left Half Button - Previous */}
                 <div 
-                  className={`flex-1 transition-colors rounded-l-lg relative ${
+                  className={`transition-colors rounded-l-lg relative ${
                     currentPage === 0 
-                      ? 'cursor-not-allowed opacity-50' 
-                      : 'cursor-pointer hover:bg-black/5'
+                      ? 'cursor-not-allowed opacity-50 w-0' 
+                      : currentPage === 17
+                      ? 'cursor-pointer hover:bg-black/5 flex-1'
+                      : 'cursor-pointer hover:bg-black/5 flex-1'
                   }`}
                   onClick={currentPage === 0 ? undefined : prevPage}
                   title={currentPage === 0 ? "No Previous Page" : "Previous Page"}
                 >
-                  {/* Back page image - only show on page 17 */}
-                  {currentPage === 17 && (
-                    <img
-                      src="/book/book_back.png"
-                      alt="Book Back"
-                      className="absolute top-0 left-0 w-full h-auto object-contain scale-110"
-                    />
-                  )}
                 </div>
                 
                 {/* Right Half Button - Next */}
                 <div 
-                  className={`flex-1 transition-colors rounded-r-lg relative ${
+                  className={`transition-colors rounded-r-lg relative ${
                     currentPage === 17 
-                      ? 'cursor-not-allowed opacity-50' 
-                      : 'cursor-pointer hover:bg-black/5'
+                      ? 'cursor-not-allowed opacity-50 w-0' 
+                      : currentPage === 0
+                      ? 'cursor-pointer hover:bg-black/5 flex-1'
+                      : 'cursor-pointer hover:bg-black/5 flex-1'
                   }`}
                   onClick={currentPage === 17 ? undefined : nextPage}
                   title={currentPage === 17 ? "No Next Page" : "Next Page"}
                 >
-                  {/* Title page image - only show on page 0 */}
-                  {currentPage === 0 && (
-                    <img
-                      src="/book/book_front.png"
-                      alt="Book Front"
-                      className="absolute inset-0 w-full h-full object-contain scale-110"
-                    />
-                  )}
                 </div>
               </div>
             </div>
@@ -370,62 +327,13 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center py-1">
-          <button
-            onClick={prevPage}
-            disabled={currentPage === 0}
-            className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            ← Prev
-          </button>
-
-                 <div className="flex space-x-1">
-                   {/* Title page dot */}
-                   <button
-                     onClick={() => setCurrentPage(0)}
-                     className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                       0 === currentPage 
-                         ? 'bg-white' 
-                         : 'bg-white/50 hover:bg-white/70'
-                     }`}
-                   />
-                   {/* Content page dots */}
-                   {Array.from({ length: 8 }, (_, index) => {
-                     const pageNumber = index * 2 + 1; // 1, 3, 5, 7, 9, 11, 13, 15
-                     return (
-                       <button
-                         key={index}
-                         onClick={() => setCurrentPage(pageNumber)}
-                         className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                           pageNumber === currentPage 
-                             ? 'bg-white' 
-                             : 'bg-white/50 hover:bg-white/70'
-                         }`}
-                       />
-                     );
-                   })}
-                   {/* Back page dot */}
-                   <button
-                     onClick={() => setCurrentPage(17)}
-                     className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                       17 === currentPage 
-                         ? 'bg-white' 
-                         : 'bg-white/50 hover:bg-white/70'
-                     }`}
-                   />
-                 </div>
-
-          <button
-            onClick={nextPage}
-            disabled={currentPage === 17}
-            className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-          >
-            Next →
-          </button>
+        {/* Page Counter */}
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+          <div className="text-xs text-gray-600">
+            Page {currentPage + 1} out of {totalPages}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }
