@@ -1,18 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NavBar from '@/components/NavBar';
 import HomeSection from './sections/Home';
 import DrawCharacter from './sections/DrawCharacter';
 import DescribeCharacter from './sections/DescribeCharacter';
 import Storybook from './sections/Storybook';
+import Login from './sections/Login';
+import Library from './sections/Library';
 import { useTransition } from '@/contexts/TransitionContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-type Page = 'landing' | 'drawing' | 'input' | 'storybook';
+type Page = 'login' | 'landing' | 'drawing' | 'input' | 'storybook' | 'library';
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState<Page>('landing');
+  const { isLoggedIn, logout } = useAuth();
+  const [currentPage, setCurrentPage] = useState<Page>(isLoggedIn ? 'landing' : 'login');
   const { startTransition, transitionPhase, setIsStorybookPage } = useTransition();
+
+  // Redirect to login if not logged in
+  useEffect(() => {
+    if (!isLoggedIn && currentPage !== 'login') {
+      setCurrentPage('login');
+    }
+  }, [isLoggedIn, currentPage]);
 
   // Determine fade class based on transition phase
   const getFadeClass = () => {
@@ -23,11 +34,52 @@ export default function Home() {
 
   const fadeClass = getFadeClass();
 
+  const handleLogout = () => {
+    logout();
+    setCurrentPage('login');
+  };
+
+  const handleLibraryClick = () => {
+    setIsStorybookPage(false);
+    startTransition(() => setCurrentPage('library'));
+  };
+
+  // Render login page
+  if (currentPage === 'login') {
+    return <Login onLoginSuccess={() => setCurrentPage('landing')} />;
+  }
+
+  // Render library page
+  if (currentPage === 'library') {
+    return (
+      <>
+        <NavBar
+          onHomeClick={() => {
+            setIsStorybookPage(false);
+            startTransition(() => setCurrentPage('landing'));
+          }}
+          onLibraryClick={handleLibraryClick}
+          onLogoutClick={handleLogout}
+        />
+        <div className={fadeClass}>
+          <Library onBack={() => {
+            setIsStorybookPage(false);
+            startTransition(() => setCurrentPage('landing'));
+          }} />
+        </div>
+      </>
+    );
+  }
+
   // Render current page
   if (currentPage === 'landing') {
     return (
       <>
-        <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
+        <NavBar
+          onHomeClick={() => startTransition(() => setCurrentPage('landing'))}
+          onLibraryClick={handleLibraryClick}
+          onLogoutClick={handleLogout}
+        />
         <div className={fadeClass}>
           <HomeSection onStart={() => {
             setIsStorybookPage(false);
@@ -41,10 +93,14 @@ export default function Home() {
   if (currentPage === 'drawing') {
     return (
       <>
-        <NavBar onHomeClick={() => {
-          setIsStorybookPage(false);
-          startTransition(() => setCurrentPage('landing'));
-        }} />
+        <NavBar
+          onHomeClick={() => {
+            setIsStorybookPage(false);
+            startTransition(() => setCurrentPage('landing'));
+          }}
+          onLibraryClick={handleLibraryClick}
+          onLogoutClick={handleLogout}
+        />
         <div className={fadeClass}>
           <DrawCharacter onNext={() => {
             setIsStorybookPage(false);
@@ -58,10 +114,14 @@ export default function Home() {
   if (currentPage === 'input') {
     return (
       <>
-        <NavBar onHomeClick={() => {
-          setIsStorybookPage(false);
-          startTransition(() => setCurrentPage('landing'));
-        }} />
+        <NavBar
+          onHomeClick={() => {
+            setIsStorybookPage(false);
+            startTransition(() => setCurrentPage('landing'));
+          }}
+          onLibraryClick={handleLibraryClick}
+          onLogoutClick={handleLogout}
+        />
         <div className={fadeClass}>
           <DescribeCharacter
             onBack={() => {
@@ -81,10 +141,14 @@ export default function Home() {
   if (currentPage === 'storybook') {
     return (
       <>
-        <NavBar onHomeClick={() => {
-          setIsStorybookPage(false);
-          startTransition(() => setCurrentPage('landing'));
-        }} />
+        <NavBar
+          onHomeClick={() => {
+            setIsStorybookPage(false);
+            startTransition(() => setCurrentPage('landing'));
+          }}
+          onLibraryClick={handleLibraryClick}
+          onLogoutClick={handleLogout}
+        />
         <div className={fadeClass}>
           <Storybook onBackToDrawing={() => {
             setIsStorybookPage(false);
@@ -98,10 +162,14 @@ export default function Home() {
   // Fallback
   return (
     <>
-      <NavBar onHomeClick={() => {
-        setIsStorybookPage(false);
-        startTransition(() => setCurrentPage('landing'));
-      }} />
+      <NavBar
+        onHomeClick={() => {
+          setIsStorybookPage(false);
+          startTransition(() => setCurrentPage('landing'));
+        }}
+        onLibraryClick={handleLibraryClick}
+        onLogoutClick={handleLogout}
+      />
       <div className={fadeClass}>
         <HomeSection onStart={() => {
           setIsStorybookPage(false);
