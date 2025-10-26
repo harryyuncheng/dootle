@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Types for the new backend response format
+interface StorySegment {
+  type: 'text' | 'image';
+  content: string;
+}
+
+interface StoryPage {
+  segments: StorySegment[];
+}
+
+interface StoryData {
+  success: boolean;
+  pages: StoryPage[];
+  character: string;
+  theme: string;
+}
+
 // In-memory session store (for demo - use Redis/DB in production)
 const sessions = new Map<string, {
   imageData?: string;
   colorScheme?: string[];
-  description?: string;
-  storyData?: {
-    story: string;
-    pages: string[];
-    type: string;
-  };
+  charDescription?: string;
+  storyTheme?: string;
+  storyData?: StoryData;
   createdAt: number;
   updatedAt: number;
 }>();

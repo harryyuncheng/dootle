@@ -12,7 +12,8 @@ export default function DescribeCharacter({
   onStoryGenerated,
 }: DescribeCharacterProps) {
   const [imageData, setImageData] = useState('');
-  const [description, setDescription] = useState('');
+  const [charDescription, setCharDescription] = useState('');
+  const [storyTheme, setStoryTheme] = useState('');
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,8 +28,11 @@ export default function DescribeCharacter({
           if (data.imageData) {
             setImageData(data.imageData);
           }
-          if (data.description) {
-            setDescription(data.description);
+          if (data.charDescription) {
+            setCharDescription(data.charDescription);
+          }
+          if (data.storyTheme) {
+            setStoryTheme(data.storyTheme);
           }
         }
       } catch (err) {
@@ -47,8 +51,13 @@ export default function DescribeCharacter({
       return;
     }
 
-    if (!description.trim()) {
-      setError('Please provide a description!');
+    if (!charDescription.trim()) {
+      setError('Please provide a character description!');
+      return;
+    }
+
+    if (!storyTheme.trim()) {
+      setError('Please provide a story theme!');
       return;
     }
 
@@ -56,21 +65,26 @@ export default function DescribeCharacter({
     setError('');
 
     try {
-      // Save description to session
+      // Save descriptions to session
       await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: description.trim() }),
+        body: JSON.stringify({
+          charDescription: charDescription.trim(),
+          storyTheme: storyTheme.trim()
+        }),
       });
 
-      const response = await fetch('/api/generate-story', {
+      // Call the backend API to generate the story
+      const response = await fetch('http://localhost:5001/api/create-story', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          imageData,
-          description: description.trim(),
+          image: imageData,
+          charDescription: charDescription.trim(),
+          storyDescription: storyTheme.trim(),
         }),
       });
 
@@ -79,7 +93,7 @@ export default function DescribeCharacter({
       }
 
       const data = await response.json();
-      
+
       // Save story data to session
       await fetch('/api/session', {
         method: 'POST',
@@ -139,10 +153,22 @@ export default function DescribeCharacter({
                 Character Description
               </h2>
               <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Write a short description of your character... (e.g., 'A brave knight with a golden sword who loves adventure')"
-                className="w-full h-32 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={charDescription}
+                onChange={(e) => setCharDescription(e.target.value)}
+                placeholder="Describe your character... (e.g., 'A curious dragon who loves reading books')"
+                className="w-full h-24 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Story Theme
+              </h2>
+              <textarea
+                value={storyTheme}
+                onChange={(e) => setStoryTheme(e.target.value)}
+                placeholder="What should the story be about? (e.g., 'An adventure in a magical library')"
+                className="w-full h-24 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
@@ -161,8 +187,8 @@ export default function DescribeCharacter({
               </button>
               <button
                 onClick={generateStory}
-                disabled={isGenerating || !description.trim()}
-                className="flex-1 py-3 px-6 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={isGenerating || !charDescription.trim() || !storyTheme.trim()}
+                className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 {isGenerating ? (
                   <div className="flex items-center justify-center">
