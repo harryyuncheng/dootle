@@ -11,7 +11,7 @@ interface StorybookProps {
 
 export default function Storybook({ pages, imageData, colorScheme, onBackToDrawing }: StorybookProps) {
   const [currentPage, setCurrentPage] = useState(0);
-  const totalPages = 16; // Total pages including start and end
+  const totalPages = 18; // Total pages including start and end
 
   const getBackgroundStyle = () => {
     // Always use solid pale blue background
@@ -24,8 +24,11 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     if (currentPage === 0) {
       // From title page to first content page
       setCurrentPage(1);
-    } else if (currentPage < 15) { // Max page 15 to show pages 15-16
+    } else if (currentPage < 16) { // Max page 16 to show pages 16-17
       setCurrentPage(currentPage + 2);
+    } else if (currentPage === 16) {
+      // From page 16 to back page 17
+      setCurrentPage(17);
     }
   };
 
@@ -33,6 +36,9 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     if (currentPage === 1) {
       // From first content page back to title page
       setCurrentPage(0);
+    } else if (currentPage === 17) {
+      // From back page to page 16
+      setCurrentPage(16);
     } else if (currentPage > 1) {
       setCurrentPage(currentPage - 2);
     }
@@ -41,19 +47,19 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
   const getBookImage = () => {
     if (currentPage === 0) {
       return "/book/book_mid.png"; // Show book_mid.png as background for title page
-    } else if (currentPage === 16) {
-      return "/book/book_back.png";
+    } else if (currentPage === 17) {
+      return "/book/book_mid.png"; // Show book_mid.png as background for back page
     } else {
       return "/book/book_mid.png";
     }
   };
 
   const shouldShowContent = () => {
-    return currentPage > 0 && currentPage < 16;
+    return currentPage > 0 && currentPage < 17;
   };
 
   const shouldShowPageNumbers = () => {
-    return currentPage > 0 && currentPage < 16;
+    return currentPage > 0 && currentPage < 17;
   };
 
   return (
@@ -86,21 +92,48 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
               </div>
             )}
 
+            {/* Background box for back page - extends across both buttons */}
+            {currentPage === 17 && (
+              <div className="absolute inset-0 flex justify-center items-center z-25">
+                <div 
+                  className="w-[70%] h-[70%] scale-110"
+                  style={{ backgroundColor: '#DBEAFE' }}
+                />
+              </div>
+            )}
+
             {/* Transparent Navigation Buttons - Connected in Center */}
             <div className="absolute inset-0 flex justify-center items-center z-30">
               <div className="flex w-[70%] h-[70%]">
                 {/* Left Half Button - Previous */}
                 <div 
-                  className="flex-1 cursor-pointer hover:bg-black/5 transition-colors rounded-l-lg"
-                  onClick={prevPage}
-                  title="Previous Page"
-                />
+                  className={`flex-1 transition-colors rounded-l-lg relative ${
+                    currentPage === 0 
+                      ? 'cursor-not-allowed opacity-50' 
+                      : 'cursor-pointer hover:bg-black/5'
+                  }`}
+                  onClick={currentPage === 0 ? undefined : prevPage}
+                  title={currentPage === 0 ? "No Previous Page" : "Previous Page"}
+                >
+                  {/* Back page image - only show on page 17 */}
+                  {currentPage === 17 && (
+                    <img
+                      src="/book/book_back.png"
+                      alt="Book Back"
+                      className="absolute inset-0 w-full h-full object-contain scale-110"
+                    />
+                  )}
+                </div>
                 
                 {/* Right Half Button - Next */}
                 <div 
-                  className="flex-1 cursor-pointer hover:bg-black/5 transition-colors rounded-r-lg relative"
-                  onClick={nextPage}
-                  title="Next Page"
+                  className={`flex-1 transition-colors rounded-r-lg relative ${
+                    currentPage === 17 
+                      ? 'cursor-not-allowed opacity-50' 
+                      : 'cursor-pointer hover:bg-black/5'
+                  }`}
+                  onClick={currentPage === 17 ? undefined : nextPage}
+                  title={currentPage === 17 ? "No Next Page" : "Next Page"}
                 >
                   {/* Title page image - only show on page 0 */}
                   {currentPage === 0 && (
@@ -201,9 +234,9 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
                    })}
                    {/* Back page dot */}
                    <button
-                     onClick={() => setCurrentPage(16)}
+                     onClick={() => setCurrentPage(17)}
                      className={`w-1 h-1 rounded-full transition-all duration-200 ${
-                       16 === currentPage 
+                       17 === currentPage 
                          ? 'bg-white' 
                          : 'bg-white/50 hover:bg-white/70'
                      }`}
@@ -212,7 +245,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
 
           <button
             onClick={nextPage}
-            disabled={currentPage === 16}
+            disabled={currentPage === 17}
             className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             Next →
