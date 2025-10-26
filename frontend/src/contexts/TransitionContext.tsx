@@ -7,6 +7,8 @@ type TransitionPhase = 'idle' | 'fading-out' | 'fading-in';
 type TransitionContextType = {
   isTransitioning: boolean;
   transitionPhase: TransitionPhase;
+  isStorybookPage: boolean;
+  setIsStorybookPage: (value: boolean) => void;
   startTransition: (callback: () => void) => Promise<void>;
 };
 
@@ -15,6 +17,7 @@ const TransitionContext = createContext<TransitionContextType | undefined>(undef
 export function TransitionProvider({ children }: { children: ReactNode }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>('idle');
+  const [isStorybookPage, setIsStorybookPage] = useState(false);
 
   const startTransition = async (callback: () => void): Promise<void> => {
     return new Promise((resolve) => {
@@ -37,7 +40,7 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <TransitionContext.Provider value={{ isTransitioning, transitionPhase, startTransition }}>
+    <TransitionContext.Provider value={{ isTransitioning, transitionPhase, isStorybookPage, setIsStorybookPage, startTransition }}>
       {children}
     </TransitionContext.Provider>
   );

@@ -107,16 +107,16 @@ export default function DescribeCharacter({
   return (
     <div className="min-h-screen py-8 relative overflow-hidden">
         <div className="max-w-2xl mx-auto px-4 relative z-10">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              Describe Your Character
-            </h1>
-            <p className="text-gray-600">
-              Tell us about your character and the story you'd like to create!
-            </p>
-          </div>
+          {/* Centered container for entire interface */}
+          <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+            <div className="flex flex-col items-center w-full">
+              <div className="text-center mb-2">
+                <h1 className="text-4xl font-bold text-gray-800">
+                  Describe Your Character
+                </h1>
+              </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 Your Drawing
@@ -162,7 +162,7 @@ export default function DescribeCharacter({
               <button
                 onClick={generateStory}
                 disabled={isGenerating || !description.trim()}
-                className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="flex-1 py-3 px-6 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 {isGenerating ? (
                   <div className="flex items-center justify-center">
@@ -170,10 +170,12 @@ export default function DescribeCharacter({
                     Creating Your Storybook...
                   </div>
                 ) : (
-                  '📚 Generate Storybook'
+                  'Create my story!'
                 )}
               </button>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>
