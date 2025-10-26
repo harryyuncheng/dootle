@@ -76,10 +76,8 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
   };
 
   const getBackgroundStyle = () => {
-    // Always use solid pale blue background
-    return {
-      background: '#DBEAFE'
-    };
+    // Use default background from globals
+    return {};
   };
 
   const readAloud = async () => {
@@ -190,41 +188,8 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
           }
         }
       `}</style>
-      <div className="h-screen w-screen flex flex-col items-center p-0 overflow-hidden" style={{...getBackgroundStyle(), animation: shouldShowEnlargementAnimation() ? 'backgroundFadeToDark 1s ease-out forwards' : shouldShowShrinkAnimation() ? 'backgroundFadeToLight 1.2s ease-out forwards' : ''}}>
-      <div className="max-w-4xl w-full h-full flex flex-col">
-        {/* Header */}
-        <div className="text-center mb-0 py-1">
-          <h1 className="text-4xl font-bold text-white drop-shadow-lg">
-            Your Storybook
-          </h1>
-          <div className="flex items-center justify-center gap-4">
-            <p className="text-white/90 text-lg">
-              Page {currentPage + 1} of {pages.length}
-            </p>
-            <button
-              onClick={readAloud}
-              disabled={isLoadingAudio}
-              className="p-2 bg-white/20 backdrop-blur-sm text-white rounded-full hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              title={isPlayingAudio ? "Stop reading" : "Read aloud"}
-            >
-              {isLoadingAudio ? (
-                <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : isPlayingAudio ? (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
-                </svg>
-              ) : (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-
+      <div className="h-screen w-screen flex flex-col items-center justify-center p-0 overflow-hidden" style={getBackgroundStyle()}>
+      <div className="max-w-4xl w-full h-full flex flex-col items-center justify-center">
         {/* Storybook Page */}
         <div className="relative flex items-center justify-center w-full max-w-4xl">
             {/* Book Background Image */}
@@ -340,6 +305,31 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
             Page {currentPage + 1} out of {totalPages}
           </div>
         </div>
+
+        {/* Speech Button - Positioned in bottom right corner */}
+        {/* Adjust position by modifying bottom and right values */}
+        <button
+          onClick={readAloud}
+          disabled={isLoadingAudio}
+          className="fixed p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg z-50"
+          style={{ bottom: '2rem', right: '2rem' }}
+          title={isPlayingAudio ? "Stop reading" : "Read aloud"}
+        >
+          {isLoadingAudio ? (
+            <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : isPlayingAudio ? (
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          )}
+        </button>
       </div>
     </div>
     </>
