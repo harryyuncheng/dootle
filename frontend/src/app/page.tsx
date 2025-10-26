@@ -12,14 +12,25 @@ type Page = 'landing' | 'drawing' | 'input' | 'storybook';
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
-  const { startTransition } = useTransition();
+  const { startTransition, transitionPhase } = useTransition();
+
+  // Determine fade class based on transition phase
+  const getFadeClass = () => {
+    if (transitionPhase === 'fading-out') return 'fade-out';
+    if (transitionPhase === 'fading-in') return 'fade-in';
+    return '';
+  };
+
+  const fadeClass = getFadeClass();
 
   // Render current page
   if (currentPage === 'landing') {
     return (
       <>
         <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
-        <HomeSection onStart={() => startTransition(() => setCurrentPage('drawing'))} />
+        <div className={fadeClass}>
+          <HomeSection onStart={() => startTransition(() => setCurrentPage('drawing'))} />
+        </div>
       </>
     );
   }
@@ -28,7 +39,9 @@ export default function Home() {
     return (
       <>
         <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
-        <DrawCharacter onNext={() => startTransition(() => setCurrentPage('input'))} />
+        <div className={fadeClass}>
+          <DrawCharacter onNext={() => startTransition(() => setCurrentPage('input'))} />
+        </div>
       </>
     );
   }
@@ -37,10 +50,12 @@ export default function Home() {
     return (
       <>
         <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
-        <DescribeCharacter
-          onBack={() => startTransition(() => setCurrentPage('drawing'))}
-          onStoryGenerated={() => startTransition(() => setCurrentPage('storybook'))}
-        />
+        <div className={fadeClass}>
+          <DescribeCharacter
+            onBack={() => startTransition(() => setCurrentPage('drawing'))}
+            onStoryGenerated={() => startTransition(() => setCurrentPage('storybook'))}
+          />
+        </div>
       </>
     );
   }
@@ -49,7 +64,9 @@ export default function Home() {
     return (
       <>
         <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
-        <Storybook onBackToDrawing={() => startTransition(() => setCurrentPage('drawing'))} />
+        <div className={fadeClass}>
+          <Storybook onBackToDrawing={() => startTransition(() => setCurrentPage('drawing'))} />
+        </div>
       </>
     );
   }
@@ -58,7 +75,9 @@ export default function Home() {
   return (
     <>
       <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
-      <HomeSection onStart={() => startTransition(() => setCurrentPage('drawing'))} />
+      <div className={fadeClass}>
+        <HomeSection onStart={() => startTransition(() => setCurrentPage('drawing'))} />
+      </div>
     </>
   );
 }
