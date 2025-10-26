@@ -75,6 +75,13 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     return currentPage === 17;
   };
 
+  const getBackgroundStyle = () => {
+    // Always use solid pale blue background
+    return {
+      background: '#DBEAFE'
+    };
+  };
+
   const readAloud = async () => {
     // Stop current audio if playing
     if (isPlayingAudio && audioRef.current) {
@@ -334,6 +341,7 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
           </div>
         </div>
       </div>
+    </div>
     </>
   );
 }
