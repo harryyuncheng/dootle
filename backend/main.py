@@ -204,7 +204,7 @@ def parse_story_into_pages(story_text):
     pages = []
 
     # Split by page markers (Cover, Page 1, Page 2, etc.)
-    page_pattern = r'(?:Cover:|Page \d+:)'
+    page_pattern = r'(?:Cover:|Page \d+)'
     page_splits = re.split(page_pattern, story_text)
 
     # Remove empty first element if present
