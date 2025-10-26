@@ -80,6 +80,40 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
     return {};
   };
 
+  const downloadPDF = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pages: pages,
+          title: 'My Storybook'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'My_Storybook.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
+
   const readAloud = async () => {
     // Stop current audio if playing
     if (isPlayingAudio && audioRef.current) {
@@ -308,32 +342,44 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
           </div>
         </div>
 
-        {/* Speech Button - Positioned in bottom right corner */}
-        {/* Adjust position by modifying bottom and right values */}
-        <button
-          onClick={readAloud}
-          disabled={isLoadingAudio}
-          className="fixed p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg z-50"
-          style={{ bottom: '2rem', right: '2rem' }}
-          title={isPlayingAudio ? "Stop reading" : "Read aloud"}
-        >
-          {isLoadingAudio ? (
-            <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          ) : isPlayingAudio ? (
+        {/* Action Buttons - Positioned in bottom right corner */}
+        <div className="fixed flex flex-col gap-3 z-50" style={{ bottom: '2rem', right: '2rem' }}>
+          {/* PDF Download Button */}
+          <button
+            onClick={downloadPDF}
+            className="p-3 bg-green-500 text-white rounded-full hover:bg-green-600 transition-all duration-200 shadow-lg"
+            title="Download as PDF"
+          >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm8-10h-2v3h-2v-3H8v5h2v-2h2v2h2v-5z"/>
             </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-            </svg>
-          )}
-        </button>
+          </button>
+
+          {/* Speech Button */}
+          <button
+            onClick={readAloud}
+            disabled={isLoadingAudio}
+            className="p-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+            title={isPlayingAudio ? "Stop reading" : "Read aloud"}
+          >
+            {isLoadingAudio ? (
+              <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : isPlayingAudio ? (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              </svg>
+            )}
+          </button>
+          </div>
+        </div>
       </div>
-    </div>
     </>
   );
 }

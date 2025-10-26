@@ -11,5 +11,6 @@ dependencies = [
     "flask-cors>=6.0.1",
     "openai>=2.6.1",
     "python-dotenv>=1.1.1",
+    "reportlab>=4.4.4",
     "requests>=2.32.5",
 ]
