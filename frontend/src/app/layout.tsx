@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Schoolbell } from "next/font/google";
 import "./globals.css";
 import Clouds from "@/components/Clouds";
-import CloudTransition from "@/components/CloudTransition";
 import { TransitionProvider } from "@/contexts/TransitionContext";
 
 const geistSans = Geist({
@@ -12,6 +11,12 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const schoolbell = Schoolbell({
+  weight: "400",
+  variable: "--font-schoolbell",
   subsets: ["latin"],
 });
 
@@ -28,11 +33,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${schoolbell.variable} antialiased`}
       >
         <TransitionProvider>
           <Clouds />
-          <CloudTransition />
           {children}
         </TransitionProvider>
       </body>
