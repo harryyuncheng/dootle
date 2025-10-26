@@ -8,7 +8,6 @@ interface StorybookSectionProps {
 }
 
 export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionData, setSessionData] = useState<{
     imageData?: string;
@@ -49,17 +48,12 @@ export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
       console.error('Error clearing session:', err);
     }
 
-    setIsTransitioning(true);
-  };
-
-  const handleCloudTransitionComplete = () => {
-    setIsTransitioning(false);
     onBackToDrawing();
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600">Loading your storybook...</div>
       </div>
     );
@@ -67,22 +61,18 @@ export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
 
   if (!sessionData.storyData || !sessionData.imageData) {
     return (
-      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600">No story data found. Please start over.</div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className={`transition-all duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
-        <StorybookComponent
-          pages={sessionData.storyData.pages}
-          imageData={sessionData.imageData}
-          colorScheme={sessionData.colorScheme || []}
-          onBackToDrawing={handleBackToDrawing}
-        />
-      </div>
-    </>
+    <StorybookComponent
+      pages={sessionData.storyData.pages}
+      imageData={sessionData.imageData}
+      colorScheme={sessionData.colorScheme || []}
+      onBackToDrawing={handleBackToDrawing}
+    />
   );
 }

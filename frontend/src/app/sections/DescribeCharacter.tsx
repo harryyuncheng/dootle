@@ -15,7 +15,6 @@ export default function DescribeCharacter({
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load session data on mount
@@ -41,10 +40,6 @@ export default function DescribeCharacter({
 
     loadSessionData();
   }, []);
-
-  const handleBack = () => {
-    setIsTransitioning(true);
-  };
 
   const generateStory = async () => {
     if (!imageData) {
@@ -92,13 +87,8 @@ export default function DescribeCharacter({
         body: JSON.stringify({ storyData: data }),
       });
       
-      // Start cloud transition for story generation
-      setIsTransitioning(true);
-      
-      // Navigate after transition starts
-      setTimeout(() => {
-        onStoryGenerated();
-      }, 100);
+      // Navigate to storybook
+      onStoryGenerated();
     } catch (err) {
       setError('Failed to generate story. Please try again.');
       console.error('Error generating story:', err);
@@ -106,26 +96,16 @@ export default function DescribeCharacter({
     }
   };
 
-  const handleCloudTransitionComplete = () => {
-    setIsTransitioning(false);
-    
-    // If we're not generating (i.e., going back), trigger the back callback
-    if (!isGenerating) {
-      onBack();
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className={`min-h-screen bg-blue-100 py-8 relative overflow-hidden transition-all duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+    <div className="min-h-screen py-8 relative overflow-hidden">
         <div className="max-w-2xl mx-auto px-4 relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -174,7 +154,7 @@ export default function DescribeCharacter({
 
             <div className="flex space-x-4">
               <button
-                onClick={handleBack}
+                onClick={onBack}
                 className="flex-1 py-3 px-6 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-200"
               >
                 ← Back to Drawing
@@ -197,6 +177,5 @@ export default function DescribeCharacter({
           </div>
         </div>
       </div>
-    </>
   );
 }

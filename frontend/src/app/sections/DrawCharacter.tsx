@@ -54,8 +54,7 @@ export default function DrawCharacter({ onNext }: DrawCharacterProps) {
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-blue-100 py-8 relative overflow-hidden">
+    <div className="min-h-screen py-8 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -92,6 +91,5 @@ export default function DrawCharacter({ onNext }: DrawCharacterProps) {
           </div>
         </div>
       </div>
-    </>
   );
 }
