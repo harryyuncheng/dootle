@@ -9,6 +9,7 @@ import aiohttp
 import asyncio
 from elevenlabs.client import ElevenLabs
 from io import BytesIO
+import json
 
 load_dotenv()
 
@@ -20,6 +21,7 @@ MAX_IMAGES = 5  # Maximum number of images to generate per story
 PARALLEL_IMAGE_GENERATION = False  # Set to False to generate images sequentially (avoids rate limiting)
 IMAGE_GENERATION_MAX_RETRIES = 3  # Number of times to retry image generation on failure
 IMAGE_GENERATION_RETRY_DELAY = 5  # Initial delay in seconds between retries (exponential backoff)
+TEST_MODE = False  # Set to True to use sample.json instead of making API calls
 
 # Initialize OpenRouter client
 client = OpenAI(
@@ -37,6 +39,12 @@ def load_story_prompt():
     prompt_path = os.path.join(os.path.dirname(__file__), 'story-prompt.txt')
     with open(prompt_path, 'r') as f:
         return f.read()
+
+def load_sample_data():
+    """Load sample story data from sample.json."""
+    sample_path = os.path.join(os.path.dirname(__file__), 'sample.json')
+    with open(sample_path, 'r') as f:
+        return json.load(f)
 
 def extract_image_placeholders(story_text):
     """Extract all {description} placeholders from the story."""
@@ -345,9 +353,16 @@ def create_story():
                 'error': 'Missing required fields. Need: image, charDescription, storyDescription'
             }), 400
 
-        # Load story prompt template and add user inputs
-        base_prompt = load_story_prompt()
-        prompt_text = f"""{base_prompt}
+        # Check if test mode is enabled
+        if TEST_MODE:
+            print("TEST_MODE enabled: Using sample.json data")
+            sample_data = load_sample_data()
+            return jsonify(sample_data), 200
+
+        try:
+            # Load story prompt template and add user inputs
+            base_prompt = load_story_prompt()
+            prompt_text = f"""{base_prompt}
 
 ---
 
@@ -358,49 +373,56 @@ Themes: {story_description}
 
 IMPORTANT: I'm providing a reference image of the character. Please observe the art style (e.g., stick figure, sketch, cartoon, etc.) and incorporate this into your image descriptions. If it's a stick figure, mention "in stick figure style" in the descriptions. If it's a sketch, mention "in sketchy style", etc."""
 
-        # Include the character image in the message to Claude
-        completion = client.chat.completions.create(
-            model="anthropic/claude-haiku-4.5",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt_text
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": image
+            # Include the character image in the message to Claude
+            completion = client.chat.completions.create(
+                model="anthropic/claude-haiku-4.5",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt_text
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": image
+                                }
                             }
-                        }
-                    ]
-                }
-            ]
-        )
+                        ]
+                    }
+                ]
+            )
 
-        generated_story = completion.choices[0].message.content
+            generated_story = completion.choices[0].message.content
 
-        # Log the Claude output for verification
-        print("\n=== Claude Story Output ===")
-        print(generated_story)
-        print("=========================\n")
+            # Log the Claude output for verification
+            print("\n=== Claude Story Output ===")
+            print(generated_story)
+            print("=========================\n")
 
-        # Replace placeholders with actual generated images
-        print("Generating images for story placeholders...")
-        final_story = replace_placeholders_with_images(generated_story, image, char_description)
+            # Replace placeholders with actual generated images
+            print("Generating images for story placeholders...")
+            final_story = replace_placeholders_with_images(generated_story, image, char_description)
 
-        # Parse story into structured pages
-        print("Parsing story into pages...")
-        pages = parse_story_into_pages(final_story)
+            # Parse story into structured pages
+            print("Parsing story into pages...")
+            pages = parse_story_into_pages(final_story)
 
-        return jsonify({
-            'success': True,
-            'pages': pages,
-            'character': char_description,
-            'theme': story_description
-        }), 200
+            return jsonify({
+                'success': True,
+                'pages': pages,
+                'character': char_description,
+                'theme': story_description
+            }), 200
+
+        except Exception as e:
+            # Fallback to sample data if API calls fail
+            print(f"Error during story generation: {str(e)}")
+            print("Falling back to sample.json data")
+            sample_data = load_sample_data()
+            return jsonify(sample_data), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

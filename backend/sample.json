@@ -1,4 +1,6 @@
-[
+{
+    "success": true,
+    "pages": [
     {
         "segments": [
             {
@@ -51,4 +53,7 @@
             }
         ]
     }
-]
+],
+    "character": "A curious dragon who loves reading books",
+    "theme": "An adventure in a magical library"
+}
