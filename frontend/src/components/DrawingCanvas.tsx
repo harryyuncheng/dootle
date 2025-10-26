@@ -33,7 +33,7 @@ const DrawingCanvas = forwardRef<DrawingCanvasRef, Omit<DrawingCanvasProps, 'can
   const [hasDrawing, setHasDrawing] = useState(false);
   const [selectedColor, setSelectedColor] = useState('#000000');
   const [isEraser, setIsEraser] = useState(false);
-  const [brushSize, setBrushSize] = useState(5);
+  const [brushSize, setBrushSize] = useState(4);
   const [availableColors, setAvailableColors] = useState<string[]>(BASE_COLORS);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [hue, setHue] = useState(0);
@@ -515,7 +515,7 @@ const DrawingCanvas = forwardRef<DrawingCanvasRef, Omit<DrawingCanvasProps, 'can
       </div>
 
       {/* Canvas */}
-      <div className="border-3 border-gray-300 rounded-xl overflow-hidden shadow-xl bg-white">
+      <div className="border-3 border-gray-300 rounded-xl overflow-hidden bg-white">
         <canvas
           ref={canvasRef}
           width={600}

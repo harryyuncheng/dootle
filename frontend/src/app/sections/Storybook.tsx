@@ -9,14 +9,27 @@ interface StorybookSectionProps {
 
 export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
   const [isLoading, setIsLoading] = useState(true);
+
+  interface StorySegment {
+    type: 'text' | 'image';
+    content: string;
+  }
+
+  interface StoryPage {
+    segments: StorySegment[];
+  }
+
+  interface StoryData {
+    success: boolean;
+    pages: StoryPage[];
+    character: string;
+    theme: string;
+  }
+
   const [sessionData, setSessionData] = useState<{
     imageData?: string;
     colorScheme?: string[];
-    storyData?: {
-      story: string;
-      pages: string[];
-      type: string;
-    };
+    storyData?: StoryData;
   }>({});
 
   // Load session data on mount
