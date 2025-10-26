@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import StorybookComponent from '@/components/Storybook';
-import CloudTransition from '@/components/CloudTransition';
 
 interface StorybookSectionProps {
   onBackToDrawing: () => void;
@@ -10,7 +9,6 @@ interface StorybookSectionProps {
 
 export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showCloudTransition, setShowCloudTransition] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionData, setSessionData] = useState<{
     imageData?: string;
@@ -52,11 +50,9 @@ export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
     }
 
     setIsTransitioning(true);
-    setShowCloudTransition(true);
   };
 
   const handleCloudTransitionComplete = () => {
-    setShowCloudTransition(false);
     setIsTransitioning(false);
     onBackToDrawing();
   };
@@ -87,10 +83,6 @@ export default function Storybook({ onBackToDrawing }: StorybookSectionProps) {
           onBackToDrawing={handleBackToDrawing}
         />
       </div>
-      <CloudTransition 
-        isVisible={showCloudTransition} 
-        onComplete={handleCloudTransitionComplete}
-      />
     </>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import DrawingCanvas from '@/components/DrawingCanvas';
-import CloudTransition from '@/components/CloudTransition';
 
 interface DrawCharacterProps {
   onNext: () => void;
@@ -12,8 +11,6 @@ export default function DrawCharacter({ onNext }: DrawCharacterProps) {
   const [imageData, setImageData] = useState('');
   const [colorScheme, setColorScheme] = useState<string[]>([]);
   const [error, setError] = useState('');
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showCloudTransition, setShowCloudTransition] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleImageDataChange = (data: string) => {
@@ -46,25 +43,19 @@ export default function DrawCharacter({ onNext }: DrawCharacterProps) {
         throw new Error('Failed to save drawing');
       }
 
-      setIsTransitioning(true);
-      setShowCloudTransition(true);
+      // Navigate to next page after successful save
+      onNext();
     } catch (err) {
       setError('Failed to save your drawing. Please try again.');
       console.error('Error saving drawing:', err);
+    } finally {
       setIsSaving(false);
     }
   };
 
-  const handleCloudTransitionComplete = () => {
-    setShowCloudTransition(false);
-    setIsTransitioning(false);
-    setIsSaving(false);
-    onNext();
-  };
-
   return (
     <>
-      <div className={`min-h-screen bg-blue-100 py-8 relative overflow-hidden transition-all duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      <div className="min-h-screen bg-blue-100 py-8 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
@@ -101,10 +92,6 @@ export default function DrawCharacter({ onNext }: DrawCharacterProps) {
           </div>
         </div>
       </div>
-      <CloudTransition 
-        isVisible={showCloudTransition} 
-        onComplete={handleCloudTransitionComplete}
-      />
     </>
   );
 }

@@ -8,7 +8,6 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onStart }: LandingPageProps) {
-  const [cloudsVisible, setCloudsVisible] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   
@@ -24,7 +23,6 @@ export default function LandingPage({ onStart }: LandingPageProps) {
 
   const handleStart = () => {
     setIsTransitioning(true);
-    setCloudsVisible(false);
     
     // Wait for animation to complete before transitioning
     setTimeout(() => {
@@ -34,31 +32,6 @@ export default function LandingPage({ onStart }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-blue-100 relative overflow-hidden">
-      {/* Large Side Clouds */}
-      <div className={`absolute inset-0 transition-all duration-1000 ${
-        isTransitioning ? 'opacity-0' : 'opacity-100'
-      }`}>
-        {/* Left Side - Layered Clouds */}
-        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/4">
-          {/* Back layer */}
-          <Image
-            src="/clouds/cloud1.png"
-            alt="Cloud"
-            width={600}
-            height={400}
-            className="opacity-60 absolute"
-          />
-          {/* Front layer */}
-          <Image
-            src="/clouds/cloud3.png"
-            alt="Cloud"
-            width={550}
-            height={350}
-            className="opacity-80 relative z-10"
-          />
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <div className={`text-center transition-all duration-1000 ${
@@ -97,13 +70,8 @@ export default function LandingPage({ onStart }: LandingPageProps) {
         </div>
       </div>
 
-      {/* Floating Animation */}
+      {/* Animation Styles */}
       <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-        
         @keyframes slide-in-out {
           0% {
             transform: translateY(-100%);
@@ -121,18 +89,6 @@ export default function LandingPage({ onStart }: LandingPageProps) {
             transform: translateY(100%);
             opacity: 0;
           }
-        }
-        
-        .float-animation {
-          animation: float 6s ease-in-out infinite;
-        }
-        
-        .float-animation:nth-child(2) {
-          animation-delay: -2s;
-        }
-        
-        .float-animation:nth-child(3) {
-          animation-delay: -4s;
         }
         
         .animate-slide-in-out {

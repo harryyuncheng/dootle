@@ -6,18 +6,20 @@ import HomeSection from './sections/Home';
 import DrawCharacter from './sections/DrawCharacter';
 import DescribeCharacter from './sections/DescribeCharacter';
 import Storybook from './sections/Storybook';
+import { useTransition } from '@/contexts/TransitionContext';
 
 type Page = 'landing' | 'drawing' | 'input' | 'storybook';
 
 export default function Home() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
+  const { startTransition } = useTransition();
 
   // Render current page
   if (currentPage === 'landing') {
     return (
       <>
-        <NavBar onHomeClick={() => setCurrentPage('landing')} />
-        <HomeSection onStart={() => setCurrentPage('drawing')} />
+        <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
+        <HomeSection onStart={() => startTransition(() => setCurrentPage('drawing'))} />
       </>
     );
   }
@@ -25,8 +27,8 @@ export default function Home() {
   if (currentPage === 'drawing') {
     return (
       <>
-        <NavBar onHomeClick={() => setCurrentPage('landing')} />
-        <DrawCharacter onNext={() => setCurrentPage('input')} />
+        <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
+        <DrawCharacter onNext={() => startTransition(() => setCurrentPage('input'))} />
       </>
     );
   }
@@ -34,10 +36,10 @@ export default function Home() {
   if (currentPage === 'input') {
     return (
       <>
-        <NavBar onHomeClick={() => setCurrentPage('landing')} />
+        <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
         <DescribeCharacter
-          onBack={() => setCurrentPage('drawing')}
-          onStoryGenerated={() => setCurrentPage('storybook')}
+          onBack={() => startTransition(() => setCurrentPage('drawing'))}
+          onStoryGenerated={() => startTransition(() => setCurrentPage('storybook'))}
         />
       </>
     );
@@ -46,8 +48,8 @@ export default function Home() {
   if (currentPage === 'storybook') {
     return (
       <>
-        <NavBar onHomeClick={() => setCurrentPage('landing')} />
-        <Storybook onBackToDrawing={() => setCurrentPage('drawing')} />
+        <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
+        <Storybook onBackToDrawing={() => startTransition(() => setCurrentPage('drawing'))} />
       </>
     );
   }
@@ -55,8 +57,8 @@ export default function Home() {
   // Fallback
   return (
     <>
-      <NavBar onHomeClick={() => setCurrentPage('landing')} />
-      <HomeSection onStart={() => setCurrentPage('drawing')} />
+      <NavBar onHomeClick={() => startTransition(() => setCurrentPage('landing'))} />
+      <HomeSection onStart={() => startTransition(() => setCurrentPage('drawing'))} />
     </>
   );
 }
