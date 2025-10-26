@@ -254,6 +254,55 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
               </div>
             </div>
 
+            {/* Story Content - Only show for content pages */}
+            {shouldShowContent() && (
+              <div className="absolute inset-0 flex z-15 pointer-events-none">
+                <div className="flex w-[70%] mx-auto">
+                  {/* Left Page Content */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-auto">
+                    <div className="space-y-3 max-h-full">
+                      {pages[currentPage]?.segments.map((segment, index) => (
+                        <div key={index} className="flex justify-center">
+                          {segment.type === 'text' ? (
+                            <div className="text-sm text-gray-700 leading-relaxed text-center">
+                              {segment.content}
+                            </div>
+                          ) : (
+                            <img
+                              src={segment.content}
+                              alt={`Story illustration ${index + 1}`}
+                              className="max-w-full max-h-48 object-contain rounded-lg"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Page Content */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-auto">
+                    <div className="space-y-3 max-h-full">
+                      {pages[currentPage + 1]?.segments.map((segment, index) => (
+                        <div key={index} className="flex justify-center">
+                          {segment.type === 'text' ? (
+                            <div className="text-sm text-gray-700 leading-relaxed text-center">
+                              {segment.content}
+                            </div>
+                          ) : (
+                            <img
+                              src={segment.content}
+                              alt={`Story illustration ${index + 1}`}
+                              className="max-w-full max-h-48 object-contain rounded-lg"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Page Number Textboxes - Only show for content pages */}
             {shouldShowPageNumbers() && (
               <div className="absolute inset-0 flex z-20">
@@ -272,31 +321,6 @@ export default function Storybook({ pages, imageData, colorScheme, onBackToDrawi
                     <span className="text-sm font-semibold text-gray-800">
                       Page {currentPage + 1}
                     </span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Content Overlay - Only show for middle pages */}
-            {shouldShowContent() && (
-              <div className="absolute inset-0 flex justify-center items-center z-10">
-                <div className="flex w-[70%] h-[70%]">
-                  {/* Left Page Content */}
-                  <div className="flex-1 py-4 flex flex-col justify-center">
-                    <div className="text-center space-y-2 ml-4 mr-8">
-                      <div className="text-sm text-gray-700 leading-relaxed max-w-xs mx-auto">
-                        {pages[currentPage - 1]. || 'No content available'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Page Content */}
-                  <div className="flex-1 py-4 flex flex-col justify-center">
-                    <div className="text-center space-y-2 ml-8 mr-4">
-                      <div className="text-sm text-gray-700 leading-relaxed max-w-xs mx-auto">
-                        {pages[currentPage] || 'No content available'}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
