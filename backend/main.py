@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 import requests
 import re
+from db import stories_collection
 
 load_dotenv()
 
@@ -264,12 +265,19 @@ IMPORTANT: I'm providing a reference image of the character. Please observe the 
         print("Parsing story into pages...")
         pages = parse_story_into_pages(final_story)
 
-        return jsonify({
-            'success': True,
-            'pages': pages,
-            'character': char_description,
-            'theme': story_description
-        }), 200
+        # Save story to MongoDB
+        story_doc = {
+            "character": char_description,
+            "theme": story_description,
+            "pages": pages,
+            "success": True
+        }
+
+        result = stories_collection.insert_one(story_doc)
+
+        story_doc['_id'] = str(result.inserted_id)
+
+        return jsonify(story_doc), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -277,6 +285,11 @@ IMPORTANT: I'm providing a reference image of the character. Please observe the 
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'healthy'}), 200
+
+@app.route('/api/stories', methods=['GET'])
+def get_stories():
+    all_stories = list(stories_collection.find({}, {"_id": 0}))  # exclude Mongo's _id
+    return jsonify(all_stories), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)
