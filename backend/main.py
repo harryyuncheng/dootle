@@ -266,7 +266,9 @@ async def generate_all_images_parallel(placeholders, reference_image_base64, cha
 def parse_page_segments(page_text):
     """Parse a page's text into segments of text and images."""
     segments = []
-    pattern = r'\{([^}]+)\}'
+    # Look for base64 image URLs specifically, not just any {content}
+    # This prevents splitting on } characters that might appear in the base64 data
+    pattern = r'\{data:image/[^}]+\}'
     last_index = 0
 
     for match in re.finditer(pattern, page_text):
@@ -276,8 +278,9 @@ def parse_page_segments(page_text):
             if text_content:
                 segments.append({"type": "text", "content": text_content})
 
-        # Add the image
-        segments.append({"type": "image", "content": match.group(1)})
+        # Add the image - remove the {} wrapper
+        image_url = match.group(0)[1:-1]  # Remove first { and last }
+        segments.append({"type": "image", "content": image_url})
         last_index = match.end()
 
     # Add remaining text
@@ -405,6 +408,12 @@ IMPORTANT: I'm providing a reference image of the character. Please observe the 
             # Replace placeholders with actual generated images
             print("Generating images for story placeholders...")
             final_story = replace_placeholders_with_images(generated_story, image, char_description)
+
+            # Write final story with base64 images to temp.txt for debugging
+            temp_path = os.path.join(os.path.dirname(__file__), 'temp.txt')
+            with open(temp_path, 'w') as f:
+                f.write(final_story)
+            print(f"Debug: Wrote final story to {temp_path}")
 
             # Parse story into structured pages
             print("Parsing story into pages...")

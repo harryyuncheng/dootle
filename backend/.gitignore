@@ -21,3 +21,6 @@ ENV/
 
 # OS
 .DS_Store
+
+# Debug files
+temp.txt
