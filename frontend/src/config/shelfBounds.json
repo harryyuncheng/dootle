@@ -1,0 +1,79 @@
+{
+  "shelfBounds": [
+    {
+      "shelfNumber": 1,
+      "width": "24rem",
+      "widthPx": 384,
+      "height": "80px",
+      "gap": "5rem",
+      "className": "w-96",
+      "style": {
+        "height": "80px"
+      },
+      "position": "absolute inset-0",
+      "numberLabel": {
+        "position": "absolute top-2 left-2",
+        "className": "text-2xl font-bold text-gray-700 z-10"
+      }
+    },
+    {
+      "shelfNumber": 2,
+      "width": "24rem",
+      "widthPx": 384,
+      "height": "80px",
+      "gap": "5rem",
+      "className": "w-96",
+      "style": {
+        "height": "80px"
+      },
+      "position": "absolute inset-0",
+      "numberLabel": {
+        "position": "absolute top-2 left-2",
+        "className": "text-2xl font-bold text-gray-700 z-10"
+      }
+    },
+    {
+      "shelfNumber": 3,
+      "width": "24rem",
+      "widthPx": 384,
+      "height": "80px",
+      "gap": "5rem",
+      "className": "w-96",
+      "style": {
+        "height": "80px"
+      },
+      "position": "absolute inset-0",
+      "numberLabel": {
+        "position": "absolute top-2 left-2",
+        "className": "text-2xl font-bold text-gray-700 z-10"
+      }
+    },
+    {
+      "shelfNumber": 4,
+      "width": "24rem",
+      "widthPx": 384,
+      "height": "80px",
+      "gap": "5rem",
+      "className": "w-96",
+      "style": {
+        "height": "80px"
+      },
+      "position": "absolute inset-0",
+      "numberLabel": {
+        "position": "absolute top-2 left-2",
+        "className": "text-2xl font-bold text-gray-700 z-10"
+      }
+    }
+  ],
+  "containerConfig": {
+    "gapBetweenShelves": "5rem",
+    "gapPx": 80,
+    "className": "gap-20"
+  },
+  "shelfImage": {
+    "src": "/shelf_sg.png",
+    "width": "24rem",
+    "className": "w-96 drop-shadow-lg relative z-20"
+  }
+}
+

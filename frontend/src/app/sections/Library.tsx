@@ -18,7 +18,7 @@ export default function Library({ onBack }: LibraryProps) {
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-8 min-h-[400px] flex items-center justify-center">
-          <p className="text-gray-500 text-lg">Library goes here</p>
+          {/* Library content will be displayed here */}
         </div>
 
         <div className="text-center mt-6">
