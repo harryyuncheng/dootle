@@ -7,7 +7,7 @@ import DrawCharacter from './sections/DrawCharacter';
 import DescribeCharacter from './sections/DescribeCharacter';
 import Storybook from './sections/Storybook';
 import Login from './sections/Login';
-import Library from './sections/Library';
+import Library from '@/components/Library';
 import { useTransition } from '@/contexts/TransitionContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -62,7 +62,7 @@ export default function Home() {
           onLogoutClick={handleLogout}
         />
         <div className={fadeClass}>
-          <Library onBack={() => {
+          <Library onBackToStorybook={() => {
             setIsStorybookPage(false);
             startTransition(() => setCurrentPage('landing'));
           }} />
