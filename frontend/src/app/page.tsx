@@ -63,8 +63,8 @@ export default function Home() {
         />
         <div className={fadeClass}>
           <Library onBackToStorybook={() => {
-            setIsStorybookPage(false);
-            startTransition(() => setCurrentPage('landing'));
+            setIsStorybookPage(true);
+            startTransition(() => setCurrentPage('storybook'));
           }} />
         </div>
       </>

@@ -47,7 +47,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_1.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -62,7 +63,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_2.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -77,7 +79,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_3.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -92,7 +95,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_4.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -146,7 +150,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_1.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -161,7 +166,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_2.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -176,7 +182,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_3.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -191,7 +198,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_4.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -245,7 +253,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_1.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -260,7 +269,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_2.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -275,7 +285,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_3.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -290,7 +301,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_4.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -344,7 +356,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_1.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -359,7 +372,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_2.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -374,7 +388,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_3.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
@@ -389,7 +404,8 @@ export default function Library({ onBackToStorybook }: LibraryProps) {
                   <img
                     src="/book_4.png"
                     alt="Book"
-                    className="absolute top-0 z-10"
+                    className="absolute top-0 z-10 hover:scale-[1.4] transition-transform duration-300 cursor-pointer"
+                    onClick={onBackToStorybook}
                     style={{
                       left: `${i * 24}px`,
                       transform: 'translateY(calc(0.25cm - 58px))',
